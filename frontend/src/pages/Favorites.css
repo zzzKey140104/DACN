@@ -1,0 +1,45 @@
+.favorites-page {
+  padding: 30px 0;
+}
+
+.page-title {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 30px;
+  color: var(--text-color, #2c3e50);
+}
+
+.comics-grid-favorites {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 20px;
+}
+
+.no-results {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.no-results p {
+  font-size: 18px;
+  color: var(--text-color, #7f8c8d);
+  margin-bottom: 10px;
+}
+
+.sub-text {
+  font-size: 14px;
+  color: var(--text-color, #95a5a6);
+}
+
+/* Dark mode */
+.dark .page-title {
+  color: #e0e0e0;
+}
+
+@media (max-width: 768px) {
+  .comics-grid-favorites {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 15px;
+  }
+}
+
