@@ -14,7 +14,13 @@ const authenticateToken = async (req, res, next) => {
       return errorResponse(res, 'Token không được cung cấp', 401);
     }
 
-    const decoded = await verifyToken(token, process.env.JWT_SECRET || 'your_secret_key');
+    // Validate JWT_SECRET
+    if (!process.env.JWT_SECRET) {
+      console.error('❌ Lỗi: JWT_SECRET không được cấu hình trong file .env');
+      return errorResponse(res, 'Lỗi cấu hình server', 500);
+    }
+
+    const decoded = await verifyToken(token, process.env.JWT_SECRET);
 
     // Lấy thông tin user từ database để có role
     const user = await User.findById(decoded.id);

@@ -17,6 +17,8 @@ const storage = multer.diskStorage({
     } else if (file.fieldname === 'chapter_images') {
       // Tạo thư mục tạm cho chapter images, sẽ di chuyển sau khi xử lý
       uploadPath = path.join(uploadDir, 'temp');
+    } else if (file.fieldname === 'avatar') {
+      uploadPath = path.join(uploadDir, 'avatars');
     }
     
     if (!fs.existsSync(uploadPath)) {

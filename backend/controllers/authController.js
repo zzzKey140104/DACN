@@ -21,17 +21,24 @@ class AuthController {
       // Mã hóa mật khẩu
       const hashedPassword = await bcrypt.hash(password, 10);
 
+      // Lấy avatar URL nếu có file upload
+      let avatar = null;
+      if (req.file) {
+        avatar = `/uploads/avatars/${req.file.filename}`;
+      }
+
       // Tạo user mới
       const userId = await User.create({
         username,
         email,
-        password: hashedPassword
+        password: hashedPassword,
+        avatar
       });
 
       const newUser = await User.findById(userId);
       return successResponse(
         res,
-        { id: userId, username, email, role: newUser?.role || 'reader' },
+        { id: userId, username, email, avatar: newUser?.avatar, role: newUser?.role || 'reader' },
         'Đăng ký thành công',
         201
       );
@@ -61,10 +68,16 @@ class AuthController {
         return errorResponse(res, 'Email hoặc mật khẩu không đúng', 401);
       }
 
+      // Validate JWT_SECRET
+      if (!process.env.JWT_SECRET) {
+        console.error('❌ Lỗi: JWT_SECRET không được cấu hình trong file .env');
+        return errorResponse(res, 'Lỗi cấu hình server', 500);
+      }
+
       // Tạo JWT token
       const token = jwt.sign(
         { id: user.id, email: user.email },
-        process.env.JWT_SECRET || 'your_secret_key',
+        process.env.JWT_SECRET,
         { expiresIn: '7d' }
       );
 

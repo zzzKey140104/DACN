@@ -95,6 +95,27 @@ export const checkFavorite = (comicId) => {
   return api.get(`/favorites/check/${comicId}`);
 };
 
+export const getFavoriteCount = () => {
+  return api.get('/favorites/count');
+};
+
+// Notifications API
+export const getNotifications = (params = {}) => {
+  return api.get('/notifications', { params });
+};
+
+export const getNotificationCount = () => {
+  return api.get('/notifications/count');
+};
+
+export const markNotificationAsRead = (id) => {
+  return api.put(`/notifications/${id}/read`);
+};
+
+export const markAllNotificationsAsRead = () => {
+  return api.put('/notifications/read-all');
+};
+
 // Likes API
 export const toggleLike = (comicId) => {
   return api.post('/likes/toggle', { comicId });
@@ -115,6 +136,19 @@ export const getReadingHistoryByComic = (comicId) => {
 
 export const addReadingHistory = (comicId, chapterId) => {
   return api.post('/history', { comicId, chapterId });
+};
+
+// Profile API
+export const getProfile = () => {
+  return api.get('/users/profile/me');
+};
+
+export const updateProfile = (formData) => {
+  return api.put('/users/profile/me', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
 };
 
 export default api;

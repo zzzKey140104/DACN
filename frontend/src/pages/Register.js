@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { register } from '../services/api';
 import './Auth.css';
 
 const Register = () => {
@@ -10,6 +9,8 @@ const Register = () => {
     password: '',
     confirmPassword: ''
   });
+  const [avatar, setAvatar] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -19,6 +20,22 @@ const Register = () => {
       ...formData,
       [e.target.name]: e.target.value
     });
+  };
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Kích thước ảnh không được vượt quá 5MB');
+        return;
+      }
+      setAvatar(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -33,19 +50,28 @@ const Register = () => {
     setLoading(true);
 
     try {
-      const response = await register({
-        username: formData.username,
-        email: formData.email,
-        password: formData.password
+      const formDataToSend = new FormData();
+      formDataToSend.append('username', formData.username);
+      formDataToSend.append('email', formData.email);
+      formDataToSend.append('password', formData.password);
+      if (avatar) {
+        formDataToSend.append('avatar', avatar);
+      }
+
+      const response = await fetch('http://localhost:5000/api/auth/register', {
+        method: 'POST',
+        body: formDataToSend
       });
+
+      const data = await response.json();
       
-      if (response.data.success) {
+      if (data.success) {
         navigate('/login');
       } else {
-        setError(response.data.message || 'Đăng ký thất bại');
+        setError(data.message || 'Đăng ký thất bại');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Đăng ký thất bại. Vui lòng thử lại.');
+      setError('Đăng ký thất bại. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
@@ -105,6 +131,21 @@ const Register = () => {
               required
               placeholder="Nhập lại mật khẩu"
             />
+          </div>
+
+          <div className="form-group">
+            <label>Ảnh đại diện (tùy chọn)</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarChange}
+              className="avatar-input"
+            />
+            {avatarPreview && (
+              <div className="avatar-preview">
+                <img src={avatarPreview} alt="Avatar preview" />
+              </div>
+            )}
           </div>
 
           <button type="submit" className="btn btn-primary" disabled={loading}>

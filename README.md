@@ -69,6 +69,8 @@ npm install
 
 ### Bước 3: Cấu hình Backend
 
+**⚠️ QUAN TRỌNG:** File `.env` là **bắt buộc** để ứng dụng chạy được. Ứng dụng sẽ không khởi động nếu thiếu các biến môi trường cần thiết.
+
 1. Copy file `.env.example` thành `.env` trong thư mục `backend`:
 
 **Windows:**
@@ -94,7 +96,27 @@ JWT_SECRET=your_secret_key_here_change_in_production
 FRONTEND_URL=http://localhost:3000
 ```
 
-**Lưu ý:** Thay đổi `JWT_SECRET` bằng một chuỗi ngẫu nhiên mạnh khi deploy production!
+**Các biến môi trường bắt buộc:**
+- `DB_HOST` - Địa chỉ MySQL server
+- `DB_USER` - Tên người dùng MySQL
+- `DB_NAME` - Tên database
+- `JWT_SECRET` - Secret key để mã hóa JWT token
+
+**Các biến môi trường tùy chọn:**
+- `PORT` - Port của server (mặc định: 5000)
+- `DB_PASSWORD` - Mật khẩu MySQL (để trống nếu không có)
+- `FRONTEND_URL` - URL của frontend (dùng cho CORS)
+
+**Lưu ý:** 
+- ⚠️ **JWT_SECRET là gì?** Đây là secret key dùng để mã hóa và xác thực JWT token khi user đăng nhập. Nó giống như "chìa khóa" để tạo và kiểm tra token.
+- ⚠️ **Tại sao cần thay đổi?** Giá trị mặc định `your_secret_key_here_change_in_production` là placeholder không an toàn. Bất kỳ ai biết giá trị này đều có thể tạo token giả mạo.
+- ⚠️ **Cách tạo JWT_SECRET mạnh:**
+  ```bash
+  cd backend
+  node generate-secret.js
+  ```
+  Sau đó copy giá trị được generate và thay thế trong file `.env`
+- ⚠️ Không commit file `.env` lên git (đã được thêm vào `.gitignore`)
 
 ### Bước 4: Chạy ứng dụng
 

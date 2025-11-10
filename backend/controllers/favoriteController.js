@@ -48,6 +48,17 @@ class FavoriteController {
       return errorResponse(res, 'Lỗi server', 500);
     }
   }
+
+  async getCount(req, res) {
+    try {
+      const userId = req.user.id;
+      const count = await Favorite.getCountByUserId(userId);
+      return successResponse(res, { count });
+    } catch (error) {
+      console.error('Error getting favorite count:', error);
+      return errorResponse(res, 'Lỗi server', 500);
+    }
+  }
 }
 
 module.exports = new FavoriteController();

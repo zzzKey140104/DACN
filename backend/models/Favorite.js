@@ -57,6 +57,14 @@ class Favorite {
     
     return result.affectedRows > 0;
   }
+
+  static async getCountByUserId(userId) {
+    const [result] = await db.promise.query(
+      'SELECT COUNT(*) as count FROM favorites WHERE user_id = ?',
+      [userId]
+    );
+    return result[0].count || 0;
+  }
 }
 
 module.exports = Favorite;

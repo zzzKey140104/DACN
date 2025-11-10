@@ -18,10 +18,10 @@ class User {
   }
 
   static async create(data) {
-    const { username, email, password } = data;
+    const { username, email, password, avatar } = data;
     const [result] = await db.promise.query(
-      'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
-      [username, email, password]
+      'INSERT INTO users (username, email, password, avatar) VALUES (?, ?, ?, ?)',
+      [username, email, password, avatar || null]
     );
     return result.insertId;
   }

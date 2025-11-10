@@ -1,6 +1,7 @@
 const Comic = require('../models/Comic');
 const Chapter = require('../models/Chapter');
 const Category = require('../models/Category');
+const Notification = require('../models/Notification');
 const db = require('../config/database');
 const { successResponse, errorResponse } = require('../utils/response');
 const path = require('path');
@@ -124,6 +125,20 @@ class AdminController {
         }
       }
 
+      // Kiểm tra nếu status được đổi thành completed
+      if (status === 'completed') {
+        const comic = await Comic.findById(id);
+        if (comic) {
+          // Tạo thông báo cho tất cả user đang theo dõi
+          await Notification.createForAllFollowers(
+            id,
+            'comic_completed',
+            `Truyện đã hoàn thành: ${comic.title}`,
+            `${comic.title} mà bạn đang theo dõi đã hoàn thành`
+          );
+        }
+      }
+
       return successResponse(res, null, 'Cập nhật truyện thành công');
     } catch (error) {
       console.error('Error updating comic:', error);
@@ -204,6 +219,20 @@ class AdminController {
         'UPDATE comics SET total_chapters = (SELECT COUNT(*) FROM chapters WHERE comic_id = ?), updated_at = CURRENT_TIMESTAMP WHERE id = ?',
         [comic_id, comic_id]
       );
+
+      // Lấy thông tin truyện để tạo thông báo
+      const comic = await Comic.findById(comic_id);
+      if (comic) {
+        // Tạo thông báo cho tất cả user đang theo dõi
+        await Notification.createForAllFollowers(
+          comic_id,
+          'new_chapter',
+          `Chương mới: ${comic.title}`,
+          `${comic.title} mà bạn đang theo dõi vừa đăng chương ${chapter_number}${title ? `: ${title}` : ''}`,
+          chapterId,
+          parseInt(chapter_number)
+        );
+      }
 
       return successResponse(res, { id: chapterId }, 'Tạo chương thành công', 201);
     } catch (error) {

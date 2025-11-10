@@ -14,6 +14,7 @@ import Category from './pages/Category';
 import History from './pages/History';
 import Favorites from './pages/Favorites';
 import AdminComics from './pages/AdminComics';
+import Profile from './pages/Profile';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import './App.css';
@@ -36,6 +37,7 @@ function App() {
                 <Route path="/category/:id" element={<Category />} />
                 <Route path="/history" element={<History />} />
                 <Route path="/favorites" element={<Favorites />} />
+                <Route path="/profile" element={<Profile />} />
                 <Route path="/admin/comics" element={<AdminComics />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
