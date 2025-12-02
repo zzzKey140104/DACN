@@ -5,7 +5,7 @@ ReaCom là website đọc truyện tranh online được xây dựng với React
 ## 📋 Mục lục
 
 - [Công nghệ sử dụng](#công-nghệ-sử-dụng)
-- [Tính năng](#tính-năng)
+- [Tính năng ReaCom](#tính-năng-reacom)
 - [Cài đặt](#cài-đặt)
 - [Cấu trúc dự án](#cấu-trúc-dự-án)
 - [API Endpoints](#api-endpoints)
@@ -149,20 +149,45 @@ DACN/
 ├── backend/
 │   ├── config/
 │   │   └── database.js          # Cấu hình kết nối MySQL
-│   ├── controllers/             # Business logic
+│   ├── controllers/             # Business logic (REST API)
 │   │   ├── authController.js
 │   │   ├── comicController.js
 │   │   ├── chapterController.js
-│   │   └── userController.js
+│   │   ├── userController.js
+│   │   ├── favoriteController.js
+│   │   ├── likeController.js
+│   │   ├── historyController.js
+│   │   ├── notificationController.js
+│   │   ├── commentController.js
+│   │   ├── categoryController.js
+│   │   ├── countryController.js
+│   │   ├── adminController.js
+│   │   └── aiController.js
 │   ├── models/                   # Database models/queries
 │   │   ├── Comic.js
 │   │   ├── Chapter.js
-│   │   └── User.js
+│   │   ├── User.js
+│   │   ├── Favorite.js
+│   │   ├── Like.js
+│   │   ├── ReadingHistory.js
+│   │   ├── Notification.js
+│   │   ├── Comment.js
+│   │   ├── Category.js
+│   │   └── Country.js
 │   ├── routes/                   # API routes
 │   │   ├── auth.js
 │   │   ├── comics.js
 │   │   ├── chapters.js
-│   │   └── users.js
+│   │   ├── users.js
+│   │   ├── favorites.js
+│   │   ├── likes.js
+│   │   ├── history.js
+│   │   ├── notifications.js
+│   │   ├── comments.js
+│   │   ├── categories.js
+│   │   ├── countries.js
+│   │   ├── admin.js
+│   │   └── ai.js
 │   ├── middleware/               # Middleware functions
 │   │   ├── auth.js
 │   │   └── errorHandler.js
@@ -219,7 +244,9 @@ DACN/
 - `POST /api/auth/login` - Đăng nhập
 
 ### Users
-- `GET /api/users/:id` - Lấy thông tin user
+- `GET /api/users/:id` - Lấy thông tin user theo id
+- `GET /api/users/profile/me` - Lấy thông tin profile của user hiện tại
+- `PUT /api/users/profile/me` - Cập nhật profile + avatar
 
 ### Categories
 - `GET /api/categories` - Lấy danh sách thể loại
@@ -232,6 +259,7 @@ DACN/
 - `GET /api/favorites` - Lấy danh sách truyện đã theo dõi
 - `POST /api/favorites/toggle` - Bật/tắt theo dõi truyện
 - `GET /api/favorites/check/:comicId` - Kiểm tra đã theo dõi chưa
+- `GET /api/favorites/count` - Lấy tổng số truyện đã theo dõi
 
 ### Likes (Yêu cầu authentication)
 - `POST /api/likes/toggle` - Bật/tắt thích truyện
@@ -241,6 +269,27 @@ DACN/
 - `GET /api/history` - Lấy lịch sử đọc
 - `GET /api/history/comic/:comicId` - Lấy lịch sử đọc của một truyện
 - `POST /api/history` - Thêm/cập nhật lịch sử đọc
+- `DELETE /api/history/comic/:comicId` - Xóa lịch sử đọc của một truyện
+- `DELETE /api/history` - Xóa toàn bộ lịch sử đọc
+
+### Notifications (Yêu cầu authentication)
+- `GET /api/notifications` - Lấy danh sách thông báo mới nhất
+- `GET /api/notifications/count` - Lấy số lượng thông báo chưa đọc
+- `PUT /api/notifications/:id/read` - Đánh dấu một thông báo là đã đọc
+- `PUT /api/notifications/read-all` - Đánh dấu tất cả thông báo là đã đọc
+
+### Comments (Yêu cầu authentication cho các hành động ghi)
+- `GET /api/comments/comic/:comicId` - Lấy comment theo truyện
+- `GET /api/comments/chapter/:chapterId` - Lấy comment theo chương
+- `GET /api/comments/:id/like/check` - Kiểm tra đã like comment chưa
+- `POST /api/comments` - Tạo comment mới
+- `POST /api/comments/:id/like` - Bật/tắt like comment
+- `DELETE /api/comments/:id` - Xóa comment
+
+### AI (Yêu cầu authentication tùy endpoint)
+- `POST /api/ai/comics/:comicId/summarize` - Tóm tắt nội dung truyện bằng AI
+- `POST /api/ai/chapters/:chapterId/summarize` - Tóm tắt nội dung chương bằng AI
+- `POST /api/ai/chat` - Chat với AI về truyện/chương đang đọc
 
 ### Admin (Yêu cầu admin role)
 - `GET /api/admin/comics` - Lấy danh sách truyện (admin)
@@ -249,36 +298,53 @@ DACN/
 - `DELETE /api/admin/comics/:id` - Xóa truyện
 - `POST /api/admin/chapters` - Tạo chương mới
 - `PUT /api/admin/chapters/:id` - Cập nhật chương
+- `PATCH /api/admin/chapters/:id/status` - Đổi trạng thái chương (mở/đóng/VIP)
 - `DELETE /api/admin/chapters/:id` - Xóa chương
+- `GET /api/admin/chapters/comic/:comic_id/closed-vip` - Lấy danh sách chương closed/VIP của 1 truyện
+- `GET /api/admin/users` - Lấy danh sách người dùng
+- `PUT /api/admin/users/:id` - Cập nhật thông tin / role người dùng
+- `DELETE /api/admin/users/:id` - Xóa người dùng
+- `GET /api/admin/comics/closed-vip` - Lấy danh sách truyện closed/VIP
+- `GET /api/admin/chapters/vip-all` - Lấy toàn bộ chương VIP
 
 ## ✨ Tính năng ReaCom
 
 ### Người dùng
-- ✅ Xem danh sách truyện với phân trang và bộ lọc
-- ✅ Tìm kiếm truyện theo tên, tác giả
-- ✅ Xem chi tiết truyện với đầy đủ thông tin
-- ✅ Đọc chương truyện với nhiều ảnh
-- ✅ Lưu vị trí đọc và tiếp tục đọc từ vị trí đã dừng
-- ✅ Đăng ký/Đăng nhập với JWT authentication
-- ✅ Theo dõi truyện yêu thích
-- ✅ Thích truyện
-- ✅ Lịch sử đọc truyện
-- ✅ Xem truyện theo thể loại
-- ✅ Xem truyện theo quốc gia
+- ✅ Xem danh sách truyện với phân trang, lọc theo trạng thái, quốc gia, thể loại
+- ✅ Tìm kiếm truyện theo tên, tác giả (search cơ bản + **Tìm kiếm nâng cao**)
+- ✅ Xem chi tiết truyện với đầy đủ thông tin, thống kê lượt xem, lượt theo dõi, lượt thích
+- ✅ Đọc chương truyện với nhiều ảnh, giao diện đọc tối ưu (sticky navbar, nút lên đầu trang, lưu vị trí đọc)
+- ✅ Lưu vị trí đọc và tự động tiếp tục đọc từ vị trí đã dừng
+- ✅ Đăng ký/Đăng nhập với JWT authentication, cập nhật avatar/profile
+- ✅ Theo dõi truyện yêu thích, xem danh sách truyện đã theo dõi
+- ✅ Thích truyện, xem trạng thái đã thích hay chưa
+- ✅ Lịch sử đọc truyện chi tiết, xóa từng truyện hoặc toàn bộ lịch sử
+- ✅ Bình luận truyện & chương, like/unlike comment
+- ✅ Nhận thông báo khi truyện theo dõi có chương mới (notification bell + badge)
+- ✅ Xem truyện theo thể loại, quốc gia
+- ✅ Trang **Xếp hạng**: top ngày/tuần/tháng, truyện mới, truyện full, yêu thích, mới cập nhật
 - ✅ Dark mode / Light mode
 - ✅ Responsive design (mobile, tablet, desktop)
 
+### Tính năng VIP & AI
+- ⭐ Hỗ trợ chương và truyện **VIP**, chỉ đọc được khi tài khoản là VIP/Admin
+- ⭐ Ẩn chương đã đóng với user thường, chỉ Admin thấy và quản lý
+- 🤖 **Tóm tắt chương bằng AI** trực tiếp trong trang đọc chương
+- 🤖 **AI Chat**: chat với AI về truyện/chương đang xem (ngữ cảnh theo comicId/chapterId)
+
 ### Admin
-- ✅ Quản lý truyện (thêm, sửa, xóa)
-- ✅ Quản lý chương (thêm, sửa, xóa)
+- ✅ Quản lý truyện (thêm, sửa, xóa, thay đổi trạng thái thường/VIP/đóng)
+- ✅ Quản lý chương (thêm, sửa, xóa, đổi trạng thái, xem danh sách chương closed/VIP)
 - ✅ Upload ảnh bìa truyện
 - ✅ Upload nhiều ảnh cho một chương
 - ✅ Quản lý thể loại và quốc gia
+- ✅ Quản lý người dùng (danh sách, cập nhật role Reader/VIP/Admin, xóa tài khoản)
 
 ### Hệ thống
 - ✅ Tự động tăng lượt xem khi đọc chương
 - ✅ Tổng lượt xem truyện = tổng lượt xem các chương
-- ✅ Phân quyền người dùng (Reader, Admin)
+- ✅ Phân quyền người dùng (Reader, VIP, Admin)
+- ✅ Thông báo định kỳ theo polling (đếm số thông báo chưa đọc trên header)
 
 ## 🚀 Deployment
 
@@ -317,7 +383,7 @@ MIT License - Xem file [LICENSE](LICENSE) để biết thêm chi tiết
 
 ## 👤 Tác giả
 
-Dự án được phát triển bởi [Tên của bạn]
+Dự án được phát triển bởi Nguyễn Khánh Hưng
 
 ## 🙏 Lời cảm ơn
 
