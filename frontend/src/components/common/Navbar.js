@@ -9,6 +9,7 @@ const Navbar = () => {
   const location = useLocation();
   const [categories, setCategories] = useState([]);
   const [showCategories, setShowCategories] = useState(false);
+  const [showRanking, setShowRanking] = useState(false);
 
   useEffect(() => {
     fetchCategories();
@@ -25,8 +26,6 @@ const Navbar = () => {
     }
   };
 
-  const isAdmin = user?.role === 'admin';
-
   return (
     <nav className="navbar">
       <div className="container">
@@ -34,6 +33,67 @@ const Navbar = () => {
           <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}>
             Trang chủ
           </Link>
+
+          <div
+            className="nav-link dropdown"
+            onMouseEnter={() => setShowRanking(true)}
+            onMouseLeave={() => setShowRanking(false)}
+          >
+            <span>Xếp hạng ▼</span>
+            {showRanking && (
+              <div className="dropdown-menu">
+                <Link
+                  to="/ranking?type=day"
+                  className="dropdown-item"
+                  onClick={() => setShowRanking(false)}
+                >
+                  Top ngày
+                </Link>
+                <Link
+                  to="/ranking?type=week"
+                  className="dropdown-item"
+                  onClick={() => setShowRanking(false)}
+                >
+                  Top tuần
+                </Link>
+                <Link
+                  to="/ranking?type=month"
+                  className="dropdown-item"
+                  onClick={() => setShowRanking(false)}
+                >
+                  Top tháng
+                </Link>
+                <Link
+                  to="/ranking?type=favorite"
+                  className="dropdown-item"
+                  onClick={() => setShowRanking(false)}
+                >
+                  Yêu thích
+                </Link>
+                <Link
+                  to="/ranking?type=latest_update"
+                  className="dropdown-item"
+                  onClick={() => setShowRanking(false)}
+                >
+                  Mới cập nhật
+                </Link>
+                <Link
+                  to="/ranking?type=new_comic"
+                  className="dropdown-item"
+                  onClick={() => setShowRanking(false)}
+                >
+                  Truyện mới
+                </Link>
+                <Link
+                  to="/ranking?type=full"
+                  className="dropdown-item"
+                  onClick={() => setShowRanking(false)}
+                >
+                  Truyện full
+                </Link>
+              </div>
+            )}
+          </div>
           
           <div 
             className="nav-link dropdown"
@@ -57,6 +117,13 @@ const Navbar = () => {
             )}
           </div>
 
+          <Link
+            to="/advanced-search"
+            className={`nav-link ${location.pathname === '/advanced-search' ? 'active' : ''}`}
+          >
+            Tìm truyện
+          </Link>
+
           {isAuthenticated && (
             <>
               <Link 
@@ -72,15 +139,6 @@ const Navbar = () => {
                 Theo dõi
               </Link>
             </>
-          )}
-
-          {isAdmin && (
-            <Link 
-              to="/admin/comics" 
-              className={`nav-link ${location.pathname.startsWith('/admin') ? 'active' : ''}`}
-            >
-              Quản lý truyện
-            </Link>
           )}
         </div>
       </div>

@@ -21,6 +21,7 @@ const AdminComics = () => {
     author: '',
     description: '',
     status: 'ongoing',
+    access_status: 'open',
     country_id: '',
     category_ids: []
   });
@@ -28,14 +29,22 @@ const AdminComics = () => {
   const [submitting, setSubmitting] = useState(false);
   const [selectedComic, setSelectedComic] = useState(null);
   const [chapters, setChapters] = useState([]);
+  const [closedVipChapters, setClosedVipChapters] = useState([]);
+  const [closedVipComics, setClosedVipComics] = useState([]);
+  const [loadingClosedVipComics, setLoadingClosedVipComics] = useState(false);
+  const [allVipChapters, setAllVipChapters] = useState([]);
+  const [loadingVipChapters, setLoadingVipChapters] = useState(false);
+  const [totalComics, setTotalComics] = useState(0);
   const [showChapterForm, setShowChapterForm] = useState(false);
   const [chapterFormData, setChapterFormData] = useState({
     comic_id: '',
     chapter_number: '',
-    title: ''
+    title: '',
+    status: 'open'
   });
   const [chapterImages, setChapterImages] = useState([]);
   const [submittingChapter, setSubmittingChapter] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (!isAuthenticated || user?.role !== 'admin') {
@@ -50,8 +59,9 @@ const AdminComics = () => {
       setLoading(true);
       const token = localStorage.getItem('token');
       
+      const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
       const [comicsRes, categoriesRes, countriesRes] = await Promise.all([
-        fetch('http://localhost:5000/api/admin/comics?page=1&limit=50', {
+        fetch(`http://localhost:5000/api/admin/comics?page=1&limit=50${searchParam}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -60,14 +70,25 @@ const AdminComics = () => {
         getCountries()
       ]);
 
+      // Fetch closed and VIP comics
+      fetchClosedVipComics();
+      fetchAllVipChapters();
+
       if (comicsRes.success && comicsRes.data) {
         // Kiểm tra nếu data là object có property data
         const comicsArray = Array.isArray(comicsRes.data) 
           ? comicsRes.data 
           : (comicsRes.data.data || []);
         setComics(comicsArray);
+        // Lấy tổng số truyện từ pagination
+        if (comicsRes.data.pagination) {
+          setTotalComics(comicsRes.data.pagination.total || comicsArray.length);
+        } else {
+          setTotalComics(comicsArray.length);
+        }
       } else {
         setComics([]);
+        setTotalComics(0);
       }
       
       if (categoriesRes.data.success) {
@@ -91,6 +112,76 @@ const AdminComics = () => {
       setLoading(false);
     }
   };
+
+  const fetchClosedVipComics = async () => {
+    try {
+      setLoadingClosedVipComics(true);
+      const token = localStorage.getItem('token');
+      const searchParam = searchQuery ? `?search=${encodeURIComponent(searchQuery)}` : '';
+      const response = await fetch(`http://localhost:5000/api/admin/comics/closed-vip${searchParam}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setClosedVipComics(data.data || []);
+      } else {
+        setClosedVipComics([]);
+      }
+    } catch (err) {
+      console.error('Error fetching closed/vip comics:', err);
+      setClosedVipComics([]);
+    } finally {
+      setLoadingClosedVipComics(false);
+    }
+  };
+
+  const fetchAllVipChapters = async () => {
+    try {
+      setLoadingVipChapters(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/admin/chapters/vip-all`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setAllVipChapters(data.data || []);
+      } else {
+        setAllVipChapters([]);
+      }
+    } catch (err) {
+      console.error('Error fetching all VIP chapters:', err);
+      setAllVipChapters([]);
+    } finally {
+      setLoadingVipChapters(false);
+    }
+  };
+
+  useEffect(() => {
+    // Debounce search
+    if (!isAuthenticated || user?.role !== 'admin') {
+      return;
+    }
+    
+    const timeoutId = setTimeout(() => {
+      fetchData();
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
+
+  useEffect(() => {
+    // Fetch closed/vip comics and VIP chapters when component mounts or search changes
+    if (isAuthenticated && user?.role === 'admin') {
+      fetchClosedVipComics();
+      fetchAllVipChapters();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, user, searchQuery]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -161,6 +252,7 @@ const AdminComics = () => {
           author: '',
           description: '',
           status: 'ongoing',
+          access_status: 'open',
           country_id: '',
           category_ids: []
         });
@@ -184,6 +276,7 @@ const AdminComics = () => {
       author: comic.author || '',
       description: comic.description || '',
       status: comic.status || 'ongoing',
+      access_status: comic.access_status || 'open',
       country_id: comic.country_id || '',
       category_ids: comic.categories ? comic.categories.map(c => c.id) : []
     });
@@ -221,25 +314,40 @@ const AdminComics = () => {
     setChapterFormData({
       comic_id: comic.id,
       chapter_number: '',
-      title: ''
+      title: '',
+      status: 'open'
     });
     setChapterImages([]);
     setShowChapterForm(false);
     
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/chapters/comic/${comic.id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
-      if (data.success) {
-        setChapters(data.data || []);
+      const [chaptersRes, closedVipRes] = await Promise.all([
+        fetch(`http://localhost:5000/api/chapters/comic/${comic.id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }),
+        fetch(`http://localhost:5000/api/admin/chapters/comic/${comic.id}/closed-vip`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+      ]);
+      
+      const chaptersData = await chaptersRes.json();
+      const closedVipData = await closedVipRes.json();
+      
+      if (chaptersData.success) {
+        setChapters(chaptersData.data || []);
+      }
+      if (closedVipData.success) {
+        setClosedVipChapters(closedVipData.data || []);
       }
     } catch (err) {
       console.error('Error fetching chapters:', err);
       setChapters([]);
+      setClosedVipChapters([]);
     }
   };
 
@@ -270,6 +378,9 @@ const AdminComics = () => {
       if (chapterFormData.title) {
         formDataToSend.append('title', chapterFormData.title);
       }
+      if (chapterFormData.status) {
+        formDataToSend.append('status', chapterFormData.status);
+      }
 
       chapterImages.forEach((file) => {
         formDataToSend.append('chapter_images', file);
@@ -291,7 +402,8 @@ const AdminComics = () => {
         setChapterFormData({
           comic_id: selectedComic.id,
           chapter_number: '',
-          title: ''
+          title: '',
+          status: 'open'
         });
         setChapterImages([]);
         handleManageChapters(selectedComic); // Refresh chapters list
@@ -330,6 +442,33 @@ const AdminComics = () => {
     } catch (err) {
       setError('Không thể xóa chương. Vui lòng thử lại.');
       console.error('Error deleting chapter:', err);
+    }
+  };
+
+  const handleToggleChapterStatus = async (chapterId, newStatus) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/admin/chapters/${chapterId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        handleManageChapters(selectedComic); // Refresh chapters list
+        fetchClosedVipComics(); // Refresh closed/VIP comics list
+        fetchAllVipChapters(); // Refresh all VIP/closed chapters list
+        fetchData(); // Refresh comics list to update total_chapters if needed
+      } else {
+        setError(data.message || 'Không thể cập nhật trạng thái');
+      }
+    } catch (err) {
+      setError('Không thể cập nhật trạng thái. Vui lòng thử lại.');
+      console.error('Error toggling chapter status:', err);
     }
   };
 
@@ -407,6 +546,19 @@ const AdminComics = () => {
                   >
                     <option value="ongoing">Đang cập nhật</option>
                     <option value="completed">Hoàn thành</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Trạng thái truy cập</label>
+                  <select
+                    name="access_status"
+                    value={formData.access_status}
+                    onChange={handleInputChange}
+                  >
+                    <option value="open">Mở</option>
+                    <option value="closed">Đóng</option>
+                    <option value="vip">VIP</option>
                   </select>
                 </div>
 
@@ -504,9 +656,22 @@ const AdminComics = () => {
           </div>
         )}
 
-        <div className="comics-table-section">
-          <h2>Danh sách truyện</h2>
-          <div className="comics-table">
+        <div className="admin-comics-layout">
+          {/* Cột 1: Danh sách truyện */}
+          <div className="comics-table-section comics-list-column">
+            <div className="table-header-with-search">
+              <h2>Danh sách truyện <span className="total-count">({totalComics})</span></h2>
+              <div className="search-box">
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm theo tên truyện hoặc tác giả..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="search-input"
+                />
+              </div>
+            </div>
+            <div className="comics-table">
             <table>
               <thead>
                 <tr>
@@ -574,6 +739,127 @@ const AdminComics = () => {
               </tbody>
             </table>
           </div>
+          </div>
+
+          {/* Cột 2: Quản lý truyện VIP */}
+          <div className="vip-management-column">
+            {/* Truyện VIP */}
+            <div className="vip-comics-section">
+              <h3>Truyện VIP và Đóng ({closedVipComics.length})</h3>
+              {loadingClosedVipComics ? (
+                <div style={{ textAlign: 'center', padding: '20px' }}>Đang tải...</div>
+              ) : closedVipComics.length > 0 ? (
+                <div className="vip-comics-list">
+                  {closedVipComics.map(comic => (
+                    <div key={comic.id} className="vip-comic-item">
+                      <div className="vip-comic-header">
+                        <img 
+                          src={getImageUrl(comic.cover_image) || 'https://via.placeholder.com/50x70'} 
+                          alt={comic.title}
+                          className="vip-comic-cover"
+                          onError={(e) => {
+                            e.target.src = 'https://via.placeholder.com/50x70';
+                          }}
+                        />
+                        <div className="vip-comic-info">
+                          <h4>{comic.title}</h4>
+                          <div className="vip-comic-badges">
+                            <span className={`access-status-badge ${comic.access_status}`}>
+                              {comic.access_status === 'closed' ? 'Đóng' : comic.access_status === 'vip' ? 'VIP' : 'Mở'}
+                            </span>
+                            <span className={`status-badge ${comic.status}`}>
+                              {comic.status === 'ongoing' ? 'Đang ra' : 'Hoàn thành'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="vip-comic-actions">
+                        <button 
+                          onClick={() => handleEdit(comic)}
+                          className="btn-edit-small"
+                        >
+                          Sửa
+                        </button>
+                        <button 
+                          onClick={() => handleManageChapters(comic)}
+                          className="btn-chapters-small"
+                        >
+                          Chương
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(comic.id)}
+                          className="btn-delete-small"
+                        >
+                          Xóa
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '20px', color: '#7f8c8d' }}>
+                  Không có truyện VIP hoặc đóng
+                </div>
+              )}
+            </div>
+
+          </div>
+
+          {/* Cột 3: Chương VIP và Đóng */}
+          <div className="vip-chapters-column">
+            <div className="vip-chapters-section">
+              <h3>Chương VIP và Đóng ({allVipChapters.length})</h3>
+              {loadingVipChapters ? (
+                <div style={{ textAlign: 'center', padding: '20px' }}>Đang tải...</div>
+              ) : allVipChapters.length > 0 ? (
+                <div className="vip-chapters-list">
+                  {allVipChapters.map(chapter => (
+                    <div key={chapter.id} className={`vip-chapter-item ${chapter.status === 'closed' ? 'chapter-closed-item' : 'chapter-vip-item'}`}>
+                      <div className="vip-chapter-info">
+                        <div className="vip-chapter-comic">
+                          <strong>{chapter.comic_title}</strong>
+                        </div>
+                        <div className="vip-chapter-details">
+                          <span>Chương {chapter.chapter_number}</span>
+                          {chapter.title && <span>: {chapter.title}</span>}
+                          <span className={`chapter-status-badge-inline ${chapter.status}`} style={{
+                            marginLeft: '8px',
+                            padding: '2px 6px',
+                            borderRadius: '3px',
+                            fontSize: '10px',
+                            fontWeight: '600'
+                          }}>
+                            {chapter.status === 'vip' ? 'VIP' : 'Đóng'}
+                          </span>
+                        </div>
+                        <div className="vip-chapter-meta">
+                          <span>👁 {chapter.views || 0}</span>
+                          <span>{new Date(chapter.created_at).toLocaleDateString('vi-VN')}</span>
+                        </div>
+                      </div>
+                      <div className="vip-chapter-actions">
+                        <button
+                          onClick={() => {
+                            const comic = closedVipComics.find(c => c.id === chapter.comic_id) || comics.find(c => c.id === chapter.comic_id);
+                            if (comic) {
+                              handleManageChapters(comic);
+                            }
+                          }}
+                          className="btn-edit-small"
+                        >
+                          Quản lý
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '20px', color: '#7f8c8d' }}>
+                  Không có chương VIP hoặc đóng
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Modal quản lý chương */}
@@ -631,6 +917,19 @@ const AdminComics = () => {
                     </div>
 
                     <div className="form-group">
+                      <label>Trạng thái chương</label>
+                      <select
+                        name="status"
+                        value={chapterFormData.status}
+                        onChange={handleChapterInputChange}
+                      >
+                        <option value="open">Mở</option>
+                        <option value="closed">Đóng</option>
+                        <option value="vip">VIP</option>
+                      </select>
+                    </div>
+
+                    <div className="form-group">
                       <label>Ảnh chương * (có thể chọn nhiều ảnh)</label>
                       <input
                         type="file"
@@ -681,6 +980,53 @@ const AdminComics = () => {
 
                 <div className="chapters-list-section">
                   <h3>Danh sách chương ({chapters.length})</h3>
+                  
+                  {closedVipChapters.length > 0 && (
+                    <div className="closed-vip-chapters-section">
+                      <h4>Chương đóng và VIP ({closedVipChapters.length})</h4>
+                      <table className="chapters-table">
+                        <thead>
+                          <tr>
+                            <th>Số chương</th>
+                            <th>Tiêu đề</th>
+                            <th>Ngày tạo</th>
+                            <th>Lượt xem</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {closedVipChapters.map(chapter => (
+                            <tr key={chapter.id}>
+                              <td>Chương {chapter.chapter_number}</td>
+                              <td>{chapter.title || '-'}</td>
+                              <td>{new Date(chapter.created_at).toLocaleDateString('vi-VN')}</td>
+                              <td>{chapter.views || 0}</td>
+                              <td>
+                                <select
+                                  value={chapter.status || 'open'}
+                                  onChange={(e) => handleToggleChapterStatus(chapter.id, e.target.value)}
+                                  className="chapter-status-select"
+                                >
+                                  <option value="open">Mở</option>
+                                  <option value="closed">Đóng</option>
+                                  <option value="vip">VIP</option>
+                                </select>
+                              </td>
+                              <td>
+                                <button 
+                                  onClick={() => handleDeleteChapter(chapter.id)}
+                                  className="btn-delete-small"
+                                >
+                                  Xóa
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                   {chapters.length > 0 ? (
                     <table className="chapters-table">
                       <thead>
@@ -689,6 +1035,7 @@ const AdminComics = () => {
                           <th>Tiêu đề</th>
                           <th>Ngày tạo</th>
                           <th>Lượt xem</th>
+                          <th>Trạng thái</th>
                           <th>Thao tác</th>
                         </tr>
                       </thead>
@@ -699,6 +1046,17 @@ const AdminComics = () => {
                             <td>{chapter.title || '-'}</td>
                             <td>{new Date(chapter.created_at).toLocaleDateString('vi-VN')}</td>
                             <td>{chapter.views || 0}</td>
+                            <td>
+                              <select
+                                value={chapter.status || 'open'}
+                                onChange={(e) => handleToggleChapterStatus(chapter.id, e.target.value)}
+                                className="chapter-status-select"
+                              >
+                                <option value="open">Mở</option>
+                                <option value="closed">Đóng</option>
+                                <option value="vip">VIP</option>
+                              </select>
+                            </td>
                             <td>
                               <button 
                                 onClick={() => handleDeleteChapter(chapter.id)}

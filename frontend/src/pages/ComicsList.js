@@ -19,6 +19,11 @@ const ComicsList = () => {
     total: 0
   });
 
+  // Khi vào trang danh sách truyện, cuộn lên đầu trang
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   useEffect(() => {
     const fetchCountries = async () => {
       try {
@@ -46,11 +51,17 @@ const ComicsList = () => {
         });
         
         if (response.data.success) {
-          setComics(response.data.data);
+          // Backend hiện đang bọc dữ liệu theo dạng:
+          // { success, message, data: { data: [...comics], pagination: {...} } }
+          const payload = response.data.data || {};
+          const comicsData = payload.data || [];
+          const paginationData = payload.pagination || {};
+
+          setComics(comicsData);
           setPagination(prev => ({
             ...prev,
-            totalPages: response.data.pagination.totalPages,
-            total: response.data.pagination.total
+            totalPages: paginationData.totalPages || prev.totalPages,
+            total: paginationData.total ?? prev.total
           }));
         }
       } catch (err) {

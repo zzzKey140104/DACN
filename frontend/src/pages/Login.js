@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { login } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import './Auth.css';
@@ -12,7 +12,15 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login: authLogin } = useAuth();
+
+  useEffect(() => {
+    // Check for account locked error from query params
+    if (searchParams.get('error') === 'account_locked') {
+      setError('Tài khoản của bạn đã bị khóa hoặc cấm vĩnh viễn. Vui lòng liên hệ quản trị viên để được hỗ trợ.');
+    }
+  }, [searchParams]);
 
   const handleChange = (e) => {
     setFormData({
@@ -46,7 +54,24 @@ const Login = () => {
       <div className="auth-container">
         <h2>Đăng nhập</h2>
         <form onSubmit={handleSubmit} className="auth-form">
-          {error && <div className="error-message">{error}</div>}
+          {error && (
+            <div className="error-message" style={{
+              padding: '15px',
+              background: '#fee',
+              border: '1px solid #fcc',
+              borderRadius: '5px',
+              color: '#c33',
+              marginBottom: '20px'
+            }}>
+              {error}
+              {error.includes('khóa') || error.includes('cấm') ? (
+                <div style={{ marginTop: '10px', fontSize: '14px', color: '#666' }}>
+                  <p>Email: khanhhungbadong@gmail.com</p>
+                  <p>Hotline: 0868686868</p>
+                </div>
+              ) : null}
+            </div>
+          )}
           
           <div className="form-group">
             <label>Email</label>

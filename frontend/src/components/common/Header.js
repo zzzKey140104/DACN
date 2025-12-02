@@ -124,8 +124,17 @@ const Header = () => {
     <header className="header">
       <div className="container">
         <div className="header-content">
-          <Link to="/" className="logo">
-            <h1>Truyện GG</h1>
+          <Link to="/" className="logo" aria-label="Trang chủ ReaCom">
+            <div className="logo-inner">
+              <img
+                src="/logo.jpg"
+                alt="ReaCom logo"
+                className="logo-image"
+              />
+              <div className="logo-text-group">
+                <span className="logo-name">ReaCom</span>
+              </div>
+            </div>
           </Link>
 
           <button className="theme-toggle" onClick={toggleTheme} title={isDarkMode ? 'Chuyển sang sáng' : 'Chuyển sang tối'}>
@@ -236,6 +245,30 @@ const Header = () => {
                 </button>
                 {showUserMenu && (
                   <div className="dropdown-menu">
+                    {user?.role === 'admin' && (
+                      <>
+                        <Link 
+                          to="/admin/comics" 
+                          className="dropdown-item" 
+                          onClick={() => {
+                            setShowUserMenu(false);
+                            setShowNotifications(false);
+                          }}
+                        >
+                          Quản lý truyện
+                        </Link>
+                        <Link 
+                          to="/admin/users" 
+                          className="dropdown-item" 
+                          onClick={() => {
+                            setShowUserMenu(false);
+                            setShowNotifications(false);
+                          }}
+                        >
+                          Quản lý tài khoản
+                        </Link>
+                      </>
+                    )}
                     <Link 
                       to="/profile" 
                       className="dropdown-item" 

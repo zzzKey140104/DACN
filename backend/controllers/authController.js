@@ -62,6 +62,11 @@ class AuthController {
         return errorResponse(res, 'Email hoặc mật khẩu không đúng', 401);
       }
 
+      // Kiểm tra account_status
+      if (user.account_status === 'locked' || user.account_status === 'banned') {
+        return errorResponse(res, 'Tài khoản của bạn đã bị khóa hoặc cấm vĩnh viễn. Vui lòng liên hệ quản trị viên để được hỗ trợ.', 403);
+      }
+
       // Kiểm tra mật khẩu
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
@@ -88,7 +93,8 @@ class AuthController {
           username: user.username,
           email: user.email,
           role: user.role || 'reader',
-          avatar: user.avatar
+          avatar: user.avatar,
+          account_status: user.account_status || 'active'
         }
       }, 'Đăng nhập thành công');
     } catch (error) {

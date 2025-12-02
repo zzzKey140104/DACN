@@ -118,19 +118,25 @@
   color: #e0e0e0;
 }
 
+/* Làm khối lọc nổi bật hơn trên nền tối */
 .dark .filters-section {
-  background: #1a1a1a;
-  border-color: #333;
+  background: #1f1f1f;
+  border: 1px solid #333;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7);
 }
 
 .dark .filter-select {
   background: #2a2a2a;
-  border-color: #333;
+  border-color: #3a3a3a;
   color: #e0e0e0;
 }
 
+.dark .filter-group label {
+  color: #d0d0d0;
+}
+
 .dark .page-btn {
-  background: #1a1a1a;
+  background: #1f1f1f;
   border-color: #333;
   color: #e0e0e0;
 }

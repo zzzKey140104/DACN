@@ -57,7 +57,13 @@ export const useChapter = (id) => {
           setError('Không tìm thấy chương');
         }
       } catch (err) {
-        setError('Không thể tải dữ liệu. Vui lòng thử lại sau.');
+        // Kiểm tra nếu lỗi là do chương bị đóng
+        const errorMessage = err.response?.data?.message || err.message;
+        if (errorMessage && errorMessage.includes('đóng')) {
+          setError(errorMessage);
+        } else {
+          setError('Không thể tải dữ liệu. Vui lòng thử lại sau.');
+        }
         console.error('Error fetching chapter:', err);
       } finally {
         setLoading(false);

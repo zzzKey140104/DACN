@@ -6,7 +6,7 @@ class Notification {
     const [result] = await db.promise.query(
       `INSERT INTO notifications (user_id, comic_id, type, title, message, chapter_id, chapter_number) 
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [user_id, comic_id, type, title, message, chapter_id || null, chapter_number || null]
+      [user_id, comic_id || null, type, title, message, chapter_id || null, chapter_number || null]
     );
     return result.insertId;
   }
@@ -16,7 +16,7 @@ class Notification {
     let query = `
       SELECT n.*, c.title as comic_title, c.slug as comic_slug, c.cover_image
       FROM notifications n
-      JOIN comics c ON n.comic_id = c.id
+      LEFT JOIN comics c ON n.comic_id = c.id
       WHERE n.user_id = ?
     `;
     const params = [userId];

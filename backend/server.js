@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const compression = require('compression');
 const dotenv = require('dotenv');
 const path = require('path');
 const db = require('./config/database');
@@ -38,6 +39,7 @@ if (process.env.JWT_SECRET === 'your_secret_key_here_change_in_production') {
 const app = express();
 
 // Middleware
+app.use(compression()); // Nén responses để giảm kích thước dữ liệu
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -56,7 +58,9 @@ app.use('/api/favorites', require('./routes/favorites'));
 app.use('/api/likes', require('./routes/likes'));
 app.use('/api/history', require('./routes/history'));
 app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/comments', require('./routes/comments'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/ai', require('./routes/ai'));
 
 // Error handling middleware (phải đặt sau routes)
 app.use(notFound);

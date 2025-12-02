@@ -49,6 +49,20 @@ class ReadingHistory {
       );
     }
   }
+
+  static async deleteByUserAndComic(userId, comicId) {
+    await db.promise.query(
+      'DELETE FROM reading_history WHERE user_id = ? AND comic_id = ?',
+      [userId, comicId]
+    );
+  }
+
+  static async deleteAllByUser(userId) {
+    await db.promise.query(
+      'DELETE FROM reading_history WHERE user_id = ?',
+      [userId]
+    );
+  }
 }
 
 module.exports = ReadingHistory;

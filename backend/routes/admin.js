@@ -38,7 +38,18 @@ router.put('/chapters/:id',
   upload.fields([{ name: 'chapter_images', maxCount: 100 }]), // Tăng lên 100 ảnh
   adminController.updateChapter.bind(adminController)
 );
+router.patch('/chapters/:id/status', adminController.toggleChapterStatus.bind(adminController));
 router.delete('/chapters/:id', adminController.deleteChapter.bind(adminController));
+router.get('/chapters/comic/:comic_id/closed-vip', adminController.getClosedAndVipChapters.bind(adminController));
+
+// Users management
+router.get('/users', adminController.getAllUsers.bind(adminController));
+router.put('/users/:id', adminController.updateUser.bind(adminController));
+router.delete('/users/:id', adminController.deleteUser.bind(adminController));
+
+// Get closed and VIP comics
+router.get('/comics/closed-vip', adminController.getClosedAndVipComics.bind(adminController));
+router.get('/chapters/vip-all', adminController.getAllVipChapters.bind(adminController));
 
 module.exports = router;
 

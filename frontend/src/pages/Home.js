@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useLatestComics, usePopularComics } from '../hooks/useComics';
 import Loading from '../components/common/Loading';
@@ -12,18 +12,21 @@ const Home = () => {
   const loading = latestLoading || popularLoading;
   const error = latestError || popularError;
 
+  // Tối ưu: sử dụng useMemo để tránh tính toán lại mỗi lần render
+  const latestRows = useMemo(() => {
+    const rows = [];
+    for (let i = 0; i < latestComics.length; i += 6) {
+      rows.push(latestComics.slice(i, i + 6));
+    }
+    return rows;
+  }, [latestComics]);
+
   if (loading) {
     return <Loading />;
   }
 
   if (error) {
     return <div className="error-message">{error}</div>;
-  }
-
-  // Chia latestComics thành 3 hàng, mỗi hàng 6 cột
-  const latestRows = [];
-  for (let i = 0; i < latestComics.length; i += 6) {
-    latestRows.push(latestComics.slice(i, i + 6));
   }
 
   return (

@@ -3,11 +3,13 @@
   display: flex;
   flex-direction: column;
   background-color: #f5f5f5;
-  transition: background-color 0.3s;
+  transition: background-color 0.3s, color 0.3s;
 }
 
 .dark .App {
-  background-color: #1a1a1a;
+  /* Nền tối nhẹ hơn một chút so với đen tuyệt đối để dễ phân biệt layout */
+  background-color: #101010;
+  color: #e0e0e0;
 }
 
 .main-content {
@@ -15,6 +17,14 @@
   padding-top: 130px;
   background-color: inherit;
   color: inherit;
+}
+
+.main-content.chapter-mode {
+  background-color: #111827; /* Nền xám đen dịu cho trang đọc chương (chế độ sáng) */
+}
+
+.dark .main-content.chapter-mode {
+  background-color: inherit; /* Trong nền tối, dùng đúng màu nền tối chung */
 }
 
 .container {

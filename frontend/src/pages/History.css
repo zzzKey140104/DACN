@@ -2,11 +2,114 @@
   padding: 30px 0;
 }
 
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 .page-title {
   font-size: 32px;
   font-weight: 700;
-  margin-bottom: 30px;
+  margin: 0;
   color: var(--text-color, #2c3e50);
+}
+
+.btn-refresh {
+  padding: 10px 20px;
+  background: var(--primary-color, #3498db);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.btn-refresh:hover:not(:disabled) {
+  background: var(--primary-hover, #2980b9);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn-refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-delete-all {
+  padding: 10px 20px;
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.btn-delete-all:hover:not(:disabled) {
+  background: #c0392b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn-delete-all:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.history-item {
+  position: relative;
+}
+
+.btn-delete-item {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  background: rgba(231, 76, 60, 0.9);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  z-index: 10;
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+.history-item:hover .btn-delete-item {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.btn-delete-item:hover:not(:disabled) {
+  background: rgba(192, 57, 43, 1);
+  transform: scale(1.1);
+}
+
+.btn-delete-item:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .comics-grid-history {
@@ -51,6 +154,11 @@
 /* Dark mode */
 .dark .page-title {
   color: #e0e0e0;
+}
+
+/* Làm khối lịch sử rõ hơn trên nền tối */
+.dark .history-item .last-read-info {
+  background: rgba(0, 0, 0, 0.6);
 }
 
 @media (max-width: 768px) {

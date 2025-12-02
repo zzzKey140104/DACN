@@ -1,6 +1,6 @@
-# Truyện GG - Website Đọc Truyện Tranh
+# ReaCom - Website Đọc Truyện Tranh
 
-Website đọc truyện tranh online được xây dựng với React (Frontend) và Node.js Express (Backend), sử dụng MySQL làm cơ sở dữ liệu.
+ReaCom là website đọc truyện tranh online được xây dựng với React (Frontend) và Node.js Express (Backend), sử dụng MySQL làm cơ sở dữ liệu.
 
 ## 📋 Mục lục
 
@@ -251,7 +251,7 @@ DACN/
 - `PUT /api/admin/chapters/:id` - Cập nhật chương
 - `DELETE /api/admin/chapters/:id` - Xóa chương
 
-## ✨ Tính năng
+## ✨ Tính năng ReaCom
 
 ### Người dùng
 - ✅ Xem danh sách truyện với phân trang và bộ lọc

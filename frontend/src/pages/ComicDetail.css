@@ -33,20 +33,47 @@
 }
 
 .meta-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: 32px 120px 1fr; /* icon | label | value */
+  align-items: center;
+  column-gap: 8px;
 }
 
-.meta-item strong {
-  min-width: 120px;
+.meta-icon {
+  display: inline-flex;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.meta-label {
   color: var(--text-color, #555);
   font-weight: 600;
 }
 
-.meta-item span {
+.meta-value {
   color: var(--text-color, #333);
-  flex: 1;
+}
+
+.vip-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(255, 193, 7, 0.4);
+}
+
+.chapter-vip-locked {
+  opacity: 0.7;
+  cursor: not-allowed !important;
+}
+
+.chapter-vip-locked:hover {
+  opacity: 0.8;
 }
 
 .status-badge {
@@ -163,17 +190,112 @@
   margin-bottom: 40px;
 }
 
+.description-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
 .comic-description-section h2 {
   font-size: 24px;
   font-weight: 700;
-  margin-bottom: 15px;
+  margin: 0;
   color: var(--text-color, #2c3e50);
+}
+
+.btn-ai-summarize {
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-ai-summarize:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-ai-summarize:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .comic-description-section p {
   line-height: 1.8;
   color: var(--text-color, #555);
   font-size: 16px;
+}
+
+.no-description {
+  color: #999;
+  font-style: italic;
+}
+
+.ai-summary-box {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+  border: 2px solid rgba(102, 126, 234, 0.2);
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+  background-color: #ffffff;
+}
+
+.ai-summary-box h3 {
+  color: #667eea;
+  font-size: 20px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-summary-box h3::before {
+  content: '🤖';
+  font-size: 24px;
+}
+
+.ai-summary-content {
+  line-height: 1.8;
+  color: #2c3e50;
+  font-size: 15px;
+  font-weight: 400;
+}
+
+.ai-summary-content p {
+  margin-bottom: 12px;
+  color: inherit;
+}
+
+.ai-summary-content p:last-child {
+  margin-bottom: 0;
+}
+
+.btn-close-summary {
+  margin-top: 15px;
+  padding: 8px 16px;
+  background: transparent;
+  color: #667eea;
+  border: 1px solid #667eea;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.3s;
+}
+
+.btn-close-summary:hover {
+  background: #667eea;
+  color: white;
 }
 
 .chapters-section {
@@ -205,9 +327,29 @@
   text-decoration: none;
 }
 
+.chapter-item > a,
+.chapter-item > div {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
 .chapter-item:hover {
   background: var(--hover-bg-dark, #e9ecef);
   transform: translateX(5px);
+}
+
+.chapter-item.chapter-closed {
+  opacity: 0.6;
+}
+
+.chapter-item.chapter-closed:hover {
+  transform: none;
+  cursor: not-allowed;
+}
+
+.chapter-item.chapter-closed a {
+  pointer-events: none;
 }
 
 .chapter-number {
@@ -238,7 +380,10 @@
 .dark .comic-info-section,
 .dark .comic-description-section,
 .dark .chapters-section {
-  background: #1a1a1a;
+  /* Làm các khối nội dung sáng hơn nền để không bị chìm vào màu đen */
+  background: #1f1f1f;
+  border: 1px solid #333;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7);
 }
 
 .dark .comic-title-large,
@@ -247,10 +392,23 @@
   color: #e0e0e0;
 }
 
-.dark .meta-item strong,
-.dark .meta-item span,
+.dark .meta-label,
+.dark .meta-value,
 .dark .comic-description-section p {
   color: #e0e0e0;
+}
+
+.dark .ai-summary-box {
+  background: #2a2a2a !important;
+  border-color: rgba(102, 126, 234, 0.4);
+}
+
+.dark .ai-summary-content {
+  color: #ffffff !important;
+}
+
+.dark .ai-summary-content p {
+  color: #ffffff !important;
 }
 
 .dark .chapter-item {

@@ -2,6 +2,7 @@ const Comic = require('../models/Comic');
 const Chapter = require('../models/Chapter');
 const Category = require('../models/Category');
 const Notification = require('../models/Notification');
+const User = require('../models/User');
 const db = require('../config/database');
 const { successResponse, errorResponse } = require('../utils/response');
 const path = require('path');
@@ -14,7 +15,9 @@ class AdminController {
       const params = {
         page: parseInt(page),
         limit: parseInt(limit),
-        search
+        search,
+        isAdmin: true, // Admin cần thấy tất cả truyện, kể cả closed và vip
+        isVip: true // Admin có quyền như VIP
       };
 
       const comics = await Comic.findAll(params);
@@ -37,7 +40,7 @@ class AdminController {
 
   async createComic(req, res) {
     try {
-      const { title, author, description, status, country_id, category_ids } = req.body;
+      const { title, author, description, status, country_id, category_ids, access_status } = req.body;
       
       if (!title) {
         return errorResponse(res, 'Vui lòng nhập tên truyện', 400);
@@ -63,7 +66,8 @@ class AdminController {
         description,
         cover_image,
         status: status || 'ongoing',
-        country_id: country_id || null
+        country_id: country_id || null,
+        access_status: access_status || 'open'
       });
 
       // Thêm thể loại
@@ -87,7 +91,7 @@ class AdminController {
   async updateComic(req, res) {
     try {
       const { id } = req.params;
-      const { title, author, description, status, country_id, category_ids } = req.body;
+      const { title, author, description, status, country_id, category_ids, access_status } = req.body;
 
       const updateData = {};
       if (title) updateData.title = title;
@@ -95,6 +99,12 @@ class AdminController {
       if (description !== undefined) updateData.description = description;
       if (status) updateData.status = status;
       if (country_id !== undefined) updateData.country_id = country_id;
+      if (access_status !== undefined) {
+        if (!['open', 'closed', 'vip'].includes(access_status)) {
+          return errorResponse(res, 'Trạng thái truy cập không hợp lệ', 400);
+        }
+        updateData.access_status = access_status;
+      }
 
       // Xử lý ảnh cover mới
       if (req.files?.cover_image) {
@@ -211,7 +221,8 @@ class AdminController {
         comic_id,
         chapter_number: parseInt(chapter_number),
         title,
-        images: images // Truyền array, model sẽ tự stringify
+        images: images, // Truyền array, model sẽ tự stringify
+        status: req.body.status || 'open' // Mặc định là open, có thể là vip hoặc closed
       });
 
       // Cập nhật total_chapters
@@ -338,6 +349,182 @@ class AdminController {
       return successResponse(res, null, 'Xóa chương thành công');
     } catch (error) {
       console.error('Error deleting chapter:', error);
+      return errorResponse(res, 'Lỗi server', 500);
+    }
+  }
+
+  async toggleChapterStatus(req, res) {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      
+      const chapter = await Chapter.findById(id);
+      if (!chapter) {
+        return errorResponse(res, 'Không tìm thấy chương', 404);
+      }
+
+      // Nếu có status trong body, dùng status đó, nếu không thì toggle
+      let newStatus;
+      if (status && ['open', 'closed', 'vip'].includes(status)) {
+        newStatus = status;
+      } else {
+        // Toggle logic: open -> closed -> vip -> open
+        if (chapter.status === 'open') {
+          newStatus = 'closed';
+        } else if (chapter.status === 'closed') {
+          newStatus = 'vip';
+        } else {
+          newStatus = 'open';
+        }
+      }
+
+      await Chapter.update(id, { status: newStatus });
+
+      return successResponse(res, { status: newStatus }, 'Cập nhật trạng thái thành công');
+    } catch (error) {
+      console.error('Error toggling chapter status:', error);
+      return errorResponse(res, 'Lỗi server', 500);
+    }
+  }
+
+  async getClosedAndVipChapters(req, res) {
+    try {
+      const { comic_id } = req.params;
+      const chapters = await Chapter.findClosedAndVipChapters(comic_id);
+      return successResponse(res, chapters);
+    } catch (error) {
+      console.error('Error fetching closed/vip chapters:', error);
+      return errorResponse(res, 'Lỗi server', 500);
+    }
+  }
+
+  async getClosedAndVipComics(req, res) {
+    try {
+      const { search = '' } = req.query;
+      const params = { search };
+      const comics = await Comic.findClosedAndVipComics(params);
+      return successResponse(res, comics);
+    } catch (error) {
+      console.error('Error fetching closed/vip comics:', error);
+      return errorResponse(res, 'Lỗi server', 500);
+    }
+  }
+
+  async getAllVipChapters(req, res) {
+    try {
+      const chapters = await Chapter.findAllVipAndClosedChapters();
+      return successResponse(res, chapters);
+    } catch (error) {
+      console.error('Error fetching all VIP and closed chapters:', error);
+      return errorResponse(res, 'Lỗi server', 500);
+    }
+  }
+
+  // ===== User management (Admin) =====
+  async getAllUsers(req, res) {
+    try {
+      const { page = 1, limit = 20, search = '' } = req.query;
+      const params = {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        search
+      };
+
+      const users = await User.findAll(params);
+      const total = await User.count(params);
+
+      return successResponse(res, {
+        data: users,
+        pagination: {
+          page: params.page,
+          limit: params.limit,
+          total,
+          totalPages: Math.ceil(total / params.limit)
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      return errorResponse(res, 'Lỗi server', 500);
+    }
+  }
+
+  async updateUser(req, res) {
+    try {
+      const { id } = req.params;
+      const { role, username, email, account_status, newPassword } = req.body;
+      const bcrypt = require('bcryptjs');
+
+      // Không cho admin tự hạ quyền/xóa chính mình thông qua endpoint này
+      if (parseInt(id) === req.user.id) {
+        return errorResponse(res, 'Không thể chỉnh sửa tài khoản của chính bạn tại đây', 400);
+      }
+
+      const updateData = {};
+      if (role !== undefined) {
+        if (!['reader', 'vip', 'admin'].includes(role)) {
+          return errorResponse(res, 'Role không hợp lệ', 400);
+        }
+        updateData.role = role;
+      }
+      if (username !== undefined) {
+        updateData.username = username;
+      }
+      if (email !== undefined) {
+        // Kiểm tra email đã tồn tại chưa (trừ user hiện tại)
+        const existingUser = await User.findByEmail(email);
+        if (existingUser && existingUser.id !== parseInt(id)) {
+          return errorResponse(res, 'Email đã được sử dụng', 400);
+        }
+        updateData.email = email;
+      }
+      if (account_status !== undefined) {
+        if (!['active', 'locked', 'banned'].includes(account_status)) {
+          return errorResponse(res, 'Trạng thái tài khoản không hợp lệ', 400);
+        }
+        updateData.account_status = account_status;
+      }
+      if (newPassword !== undefined && newPassword.trim() !== '') {
+        // Hash mật khẩu mới
+        if (newPassword.length < 6) {
+          return errorResponse(res, 'Mật khẩu phải có ít nhất 6 ký tự', 400);
+        }
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        updateData.password = hashedPassword;
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        return errorResponse(res, 'Không có dữ liệu để cập nhật', 400);
+      }
+
+      const updated = await User.update(id, updateData);
+      if (!updated) {
+        return errorResponse(res, 'Cập nhật thất bại', 404);
+      }
+
+      const user = await User.findById(id);
+      return successResponse(res, user, 'Cập nhật user thành công');
+    } catch (error) {
+      console.error('Error updating user:', error);
+      return errorResponse(res, 'Lỗi server', 500);
+    }
+  }
+
+  async deleteUser(req, res) {
+    try {
+      const { id } = req.params;
+
+      if (parseInt(id) === req.user.id) {
+        return errorResponse(res, 'Không thể xóa tài khoản của chính bạn', 400);
+      }
+
+      const deleted = await User.delete(id);
+      if (!deleted) {
+        return errorResponse(res, 'User không tồn tại', 404);
+      }
+
+      return successResponse(res, null, 'Xóa user thành công');
+    } catch (error) {
+      console.error('Error deleting user:', error);
       return errorResponse(res, 'Lỗi server', 500);
     }
   }

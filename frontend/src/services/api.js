@@ -17,6 +17,28 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Handle response errors - auto logout if account is locked/banned
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Check if error is about account being locked or banned
+    if (error.response?.status === 403) {
+      const errorMessage = error.response?.data?.message || '';
+      if (errorMessage.includes('khóa') || errorMessage.includes('cấm') || 
+          errorMessage.includes('locked') || errorMessage.includes('banned')) {
+        // Clear auth data
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        // Redirect to login if not already there
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login?error=account_locked';
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Comics API
 export const getComics = (params = {}) => {
   return api.get('/comics', { params });
@@ -138,6 +160,14 @@ export const addReadingHistory = (comicId, chapterId) => {
   return api.post('/history', { comicId, chapterId });
 };
 
+export const deleteReadingHistory = (comicId) => {
+  return api.delete(`/history/comic/${comicId}`);
+};
+
+export const deleteAllReadingHistory = () => {
+  return api.delete('/history');
+};
+
 // Profile API
 export const getProfile = () => {
   return api.get('/users/profile/me');
@@ -149,6 +179,57 @@ export const updateProfile = (formData) => {
       'Content-Type': 'multipart/form-data'
     }
   });
+};
+
+// Admin - Users management
+export const adminGetUsers = (params = {}) => {
+  return api.get('/admin/users', { params });
+};
+
+export const adminUpdateUser = (id, data) => {
+  return api.put(`/admin/users/${id}`, data);
+};
+
+export const adminDeleteUser = (id) => {
+  return api.delete(`/admin/users/${id}`);
+};
+
+// Comments API
+export const getCommentsByComicId = (comicId, params = {}) => {
+  return api.get(`/comments/comic/${comicId}`, { params });
+};
+
+export const getCommentsByChapterId = (chapterId, params = {}) => {
+  return api.get(`/comments/chapter/${chapterId}`, { params });
+};
+
+export const createComment = (data) => {
+  return api.post('/comments', data);
+};
+
+export const toggleCommentLike = (commentId) => {
+  return api.post(`/comments/${commentId}/like`);
+};
+
+export const checkCommentLike = (commentId) => {
+  return api.get(`/comments/${commentId}/like/check`);
+};
+
+export const deleteComment = (commentId) => {
+  return api.delete(`/comments/${commentId}`);
+};
+
+// AI API
+export const summarizeComic = (comicId) => {
+  return api.post(`/ai/comics/${comicId}/summarize`);
+};
+
+export const summarizeChapter = (chapterId) => {
+  return api.post(`/ai/chapters/${chapterId}/summarize`);
+};
+
+export const aiChat = (data) => {
+  return api.post('/ai/chat', data);
 };
 
 export default api;

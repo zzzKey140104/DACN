@@ -42,6 +42,34 @@ class HistoryController {
       return errorResponse(res, 'Lỗi server', 500);
     }
   }
+
+  async delete(req, res) {
+    try {
+      const userId = req.user.id;
+      const { comicId } = req.params;
+      
+      if (!comicId) {
+        return errorResponse(res, 'Thiếu comicId', 400);
+      }
+
+      await ReadingHistory.deleteByUserAndComic(userId, comicId);
+      return successResponse(res, null, 'Đã xóa lịch sử đọc');
+    } catch (error) {
+      console.error('Error deleting reading history:', error);
+      return errorResponse(res, 'Lỗi server', 500);
+    }
+  }
+
+  async deleteAll(req, res) {
+    try {
+      const userId = req.user.id;
+      await ReadingHistory.deleteAllByUser(userId);
+      return successResponse(res, null, 'Đã xóa toàn bộ lịch sử đọc');
+    } catch (error) {
+      console.error('Error deleting all reading history:', error);
+      return errorResponse(res, 'Lỗi server', 500);
+    }
+  }
 }
 
 module.exports = new HistoryController();

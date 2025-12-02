@@ -12,9 +12,35 @@ class ChapterController {
         return errorResponse(res, 'Không tìm thấy chương', 404);
       }
 
-      const comic = await Comic.findById(chapter.comic_id);
-      const prevChapter = await Chapter.findPrevChapter(chapter.comic_id, chapter.chapter_number);
-      const nextChapter = await Chapter.findNextChapter(chapter.comic_id, chapter.chapter_number);
+      // Kiểm tra quyền truy cập
+      const isAdmin = req.user && req.user.role === 'admin';
+      const isVip = req.user && (req.user.role === 'vip' || req.user.role === 'admin');
+      
+      // Kiểm tra trạng thái chương
+      if (chapter.status === 'closed' && !isAdmin) {
+        return errorResponse(res, 'Chương này đã bị đóng và không thể xem', 403);
+      }
+      
+      if (chapter.status === 'vip' && !isVip) {
+        return errorResponse(res, 'Chương này chỉ dành cho thành viên VIP. Vui lòng nâng cấp tài khoản để đọc.', 403);
+      }
+
+      // Kiểm tra access_status của truyện
+      const comic = await Comic.findById(chapter.comic_id, isVip, isAdmin);
+      if (!comic) {
+        return errorResponse(res, 'Truyện này không tồn tại hoặc bạn không có quyền truy cập', 404);
+      }
+      
+      if (comic.access_status === 'closed' && !isAdmin) {
+        return errorResponse(res, 'Truyện này đã bị đóng và không thể xem', 403);
+      }
+      
+      if (comic.access_status === 'vip' && !isVip) {
+        return errorResponse(res, 'Truyện này chỉ dành cho thành viên VIP. Vui lòng nâng cấp tài khoản để đọc.', 403);
+      }
+
+      const prevChapter = await Chapter.findPrevChapter(chapter.comic_id, chapter.chapter_number, isAdmin, isVip);
+      const nextChapter = await Chapter.findNextChapter(chapter.comic_id, chapter.chapter_number, isAdmin, isVip);
 
       // Không tăng lượt xem ở đây nữa, sẽ tách riêng endpoint
 
@@ -54,7 +80,10 @@ class ChapterController {
   async getByComicId(req, res) {
     try {
       const { comicId } = req.params;
-      const chapters = await Chapter.findByComicId(comicId);
+      // Chỉ admin mới thấy các chương đã đóng
+      const isAdmin = req.user && req.user.role === 'admin';
+      const isVip = req.user && (req.user.role === 'vip' || req.user.role === 'admin');
+      const chapters = await Chapter.findByComicId(comicId, isAdmin, isVip);
       return successResponse(res, chapters);
     } catch (error) {
       console.error('Error fetching chapters:', error);

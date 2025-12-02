@@ -36,28 +36,69 @@ class Chapter {
     return chapter;
   }
 
-  static async findByComicId(comicId) {
+  static async findByComicId(comicId, includeClosed = false, isVip = false) {
+    let query = 'SELECT id, chapter_number, title, views, status, created_at FROM chapters WHERE comic_id = ?';
+    if (!includeClosed) {
+      // Nếu không phải admin, chỉ hiển thị chương mở hoặc vip (nếu user là vip)
+      if (isVip) {
+        query += ' AND (status = "open" OR status = "vip")';
+      } else {
+        query += ' AND status = "open"';
+      }
+    }
+    query += ' ORDER BY chapter_number ASC';
+    const [chapters] = await db.promise.query(query, [comicId]);
+    return chapters;
+  }
+
+  static async findPrevChapter(comicId, chapterNumber, includeClosed = false, isVip = false) {
+    let query = 'SELECT id, chapter_number FROM chapters WHERE comic_id = ? AND chapter_number < ?';
+    if (!includeClosed) {
+      if (isVip) {
+        query += ' AND (status = "open" OR status = "vip")';
+      } else {
+        query += ' AND status = "open"';
+      }
+    }
+    query += ' ORDER BY chapter_number DESC LIMIT 1';
+    const [chapters] = await db.promise.query(query, [comicId, chapterNumber]);
+    return chapters[0] || null;
+  }
+
+  static async findNextChapter(comicId, chapterNumber, includeClosed = false, isVip = false) {
+    let query = 'SELECT id, chapter_number FROM chapters WHERE comic_id = ? AND chapter_number > ?';
+    if (!includeClosed) {
+      if (isVip) {
+        query += ' AND (status = "open" OR status = "vip")';
+      } else {
+        query += ' AND status = "open"';
+      }
+    }
+    query += ' ORDER BY chapter_number ASC LIMIT 1';
+    const [chapters] = await db.promise.query(query, [comicId, chapterNumber]);
+    return chapters[0] || null;
+  }
+
+  // Lấy danh sách chương đóng và vip (cho admin)
+  static async findClosedAndVipChapters(comicId) {
     const [chapters] = await db.promise.query(
-      'SELECT id, chapter_number, title, views, created_at FROM chapters WHERE comic_id = ? ORDER BY chapter_number ASC',
+      'SELECT id, chapter_number, title, views, status, created_at FROM chapters WHERE comic_id = ? AND (status = "closed" OR status = "vip") ORDER BY chapter_number ASC',
       [comicId]
     );
     return chapters;
   }
 
-  static async findPrevChapter(comicId, chapterNumber) {
+  // Lấy tất cả chương VIP và đóng từ tất cả truyện (cho admin)
+  static async findAllVipAndClosedChapters() {
     const [chapters] = await db.promise.query(
-      'SELECT id, chapter_number FROM chapters WHERE comic_id = ? AND chapter_number < ? ORDER BY chapter_number DESC LIMIT 1',
-      [comicId, chapterNumber]
+      `SELECT ch.id, ch.comic_id, ch.chapter_number, ch.title, ch.views, ch.status, ch.created_at,
+              c.title as comic_title, c.cover_image
+       FROM chapters ch
+       JOIN comics c ON ch.comic_id = c.id
+       WHERE ch.status = 'vip' OR ch.status = 'closed'
+       ORDER BY c.title ASC, ch.chapter_number ASC`
     );
-    return chapters[0] || null;
-  }
-
-  static async findNextChapter(comicId, chapterNumber) {
-    const [chapters] = await db.promise.query(
-      'SELECT id, chapter_number FROM chapters WHERE comic_id = ? AND chapter_number > ? ORDER BY chapter_number ASC LIMIT 1',
-      [comicId, chapterNumber]
-    );
-    return chapters[0] || null;
+    return chapters;
   }
 
   static async incrementViews(id) {
@@ -68,7 +109,7 @@ class Chapter {
   }
 
   static async create(data) {
-    const { comic_id, chapter_number, title, content, images } = data;
+    const { comic_id, chapter_number, title, content, images, status = 'open' } = data;
     
     // images có thể đã là string (JSON) hoặc array
     let imagesValue = images;
@@ -82,8 +123,8 @@ class Chapter {
     }
     
     const [result] = await db.promise.query(
-      'INSERT INTO chapters (comic_id, chapter_number, title, content, images) VALUES (?, ?, ?, ?, ?)',
-      [comic_id, chapter_number, title, content, imagesValue]
+      'INSERT INTO chapters (comic_id, chapter_number, title, content, images, status) VALUES (?, ?, ?, ?, ?, ?)',
+      [comic_id, chapter_number, title, content, imagesValue, status]
     );
     return result.insertId;
   }
