@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getCategories } from '../../services/api';
@@ -10,10 +10,28 @@ const Navbar = () => {
   const [categories, setCategories] = useState([]);
   const [showCategories, setShowCategories] = useState(false);
   const [showRanking, setShowRanking] = useState(false);
+  const categoriesRef = useRef(null);
+  const rankingRef = useRef(null);
 
   useEffect(() => {
     fetchCategories();
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (categoriesRef.current && !categoriesRef.current.contains(event.target)) {
+        setShowCategories(false);
+      }
+      if (rankingRef.current && !rankingRef.current.contains(event.target)) {
+        setShowRanking(false);
+      }
+    };
+
+    if (showCategories || showRanking) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showCategories, showRanking]);
 
   const fetchCategories = async () => {
     try {
@@ -36,10 +54,17 @@ const Navbar = () => {
 
           <div
             className="nav-link dropdown"
-            onMouseEnter={() => setShowRanking(true)}
-            onMouseLeave={() => setShowRanking(false)}
+            ref={rankingRef}
           >
-            <span>Xếp hạng ▼</span>
+            <span 
+              onClick={() => {
+                setShowRanking(!showRanking);
+                setShowCategories(false);
+              }}
+              style={{ cursor: 'pointer' }}
+            >
+              Xếp hạng ▼
+            </span>
             {showRanking && (
               <div className="dropdown-menu">
                 <Link
@@ -97,10 +122,17 @@ const Navbar = () => {
           
           <div 
             className="nav-link dropdown"
-            onMouseEnter={() => setShowCategories(true)}
-            onMouseLeave={() => setShowCategories(false)}
+            ref={categoriesRef}
           >
-            <span>Thể loại ▼</span>
+            <span 
+              onClick={() => {
+                setShowCategories(!showCategories);
+                setShowRanking(false);
+              }}
+              style={{ cursor: 'pointer' }}
+            >
+              Thể loại ▼
+            </span>
             {showCategories && (
               <div className="dropdown-menu">
                 {categories.map(category => (

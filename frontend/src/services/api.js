@@ -90,6 +90,31 @@ export const login = (credentials) => {
   return api.post('/auth/login', credentials);
 };
 
+export const verifyEmail = (token) => {
+  return api.get('/auth/verify-email', { params: { token } });
+};
+
+export const resendVerificationEmail = (email) => {
+  return api.post('/auth/resend-verification', { email });
+};
+
+export const forgotPassword = (email) => {
+  return api.post('/auth/forgot-password', { email });
+};
+
+export const resetPassword = (token, password) => {
+  return api.post('/auth/reset-password', { token, password });
+};
+
+export const setupPasswordForGoogle = (token, password) => {
+  return api.post('/auth/setup-password', { token, password });
+};
+
+export const googleLogin = () => {
+  // Redirect to backend Google OAuth endpoint
+  window.location.href = `${API_BASE_URL}/auth/google`;
+};
+
 // Categories API
 export const getCategories = () => {
   return api.get('/categories');
@@ -230,6 +255,27 @@ export const summarizeChapter = (chapterId) => {
 
 export const aiChat = (data) => {
   return api.post('/ai/chat', data);
+};
+
+// Payment API
+export const createPayment = (amount) => {
+  return api.post('/payments/create', { amount });
+};
+
+export const getPayment = (orderId) => {
+  return api.get(`/payments/${orderId}`);
+};
+
+export const checkPaymentStatus = (orderId) => {
+  return api.get(`/payments/status/${orderId}`);
+};
+
+export const getPaymentHistory = (params = {}) => {
+  return api.get('/payments/history/list', { params });
+};
+
+export const simulatePaymentSuccess = (orderId) => {
+  return api.post(`/payments/simulate-success/${orderId}`);
 };
 
 export default api;

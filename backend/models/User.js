@@ -26,11 +26,48 @@ class User {
   }
 
   static async create(data) {
-    const { username, email, password, avatar } = data;
-    const [result] = await db.promise.query(
-      'INSERT INTO users (username, email, password, avatar) VALUES (?, ?, ?, ?)',
-      [username, email, password, avatar || null]
-    );
+    const { username, email, password, avatar, email_verification_token, google_id, email_verified } = data;
+    
+    // Xây dựng query động để chỉ insert password khi có giá trị
+    // Điều này cho phép Google OAuth accounts không cần password
+    const fields = ['username', 'email'];
+    const values = [username, email];
+    const placeholders = ['?', '?'];
+    
+    // Chỉ thêm password nếu có giá trị (không phải null/undefined)
+    if (password !== undefined && password !== null) {
+      fields.push('password');
+      values.push(password);
+      placeholders.push('?');
+    }
+    
+    // Các field khác
+    if (avatar !== undefined && avatar !== null) {
+      fields.push('avatar');
+      values.push(avatar);
+      placeholders.push('?');
+    }
+    
+    if (email_verification_token !== undefined && email_verification_token !== null) {
+      fields.push('email_verification_token');
+      values.push(email_verification_token);
+      placeholders.push('?');
+    }
+    
+    if (google_id !== undefined && google_id !== null) {
+      fields.push('google_id');
+      values.push(google_id);
+      placeholders.push('?');
+    }
+    
+    if (email_verified !== undefined) {
+      fields.push('email_verified');
+      values.push(email_verified);
+      placeholders.push('?');
+    }
+    
+    const query = `INSERT INTO users (${fields.join(', ')}) VALUES (${placeholders.join(', ')})`;
+    const [result] = await db.promise.query(query, values);
     return result.insertId;
   }
 
@@ -113,6 +150,54 @@ class User {
       ['admin']
     );
     return admins;
+  }
+
+  static async findByGoogleId(googleId) {
+    const [users] = await db.promise.query(
+      'SELECT * FROM users WHERE google_id = ?',
+      [googleId]
+    );
+    return users[0] || null;
+  }
+
+  static async findByVerificationToken(token) {
+    const [users] = await db.promise.query(
+      'SELECT * FROM users WHERE email_verification_token = ?',
+      [token]
+    );
+    return users[0] || null;
+  }
+
+  static async findByPasswordResetToken(token) {
+    const [users] = await db.promise.query(
+      'SELECT * FROM users WHERE password_reset_token = ? AND password_reset_expires > NOW()',
+      [token]
+    );
+    return users[0] || null;
+  }
+
+  static async verifyEmail(userId) {
+    const [result] = await db.promise.query(
+      'UPDATE users SET email_verified = TRUE, email_verification_token = NULL WHERE id = ?',
+      [userId]
+    );
+    return result.affectedRows > 0;
+  }
+
+  static async setPasswordResetToken(userId, token, expiresAt) {
+    const [result] = await db.promise.query(
+      'UPDATE users SET password_reset_token = ?, password_reset_expires = ? WHERE id = ?',
+      [token, expiresAt, userId]
+    );
+    return result.affectedRows > 0;
+  }
+
+  static async clearPasswordResetToken(userId) {
+    const [result] = await db.promise.query(
+      'UPDATE users SET password_reset_token = NULL, password_reset_expires = NULL WHERE id = ?',
+      [userId]
+    );
+    return result.affectedRows > 0;
   }
 }
 

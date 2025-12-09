@@ -61,6 +61,7 @@ app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/comments', require('./routes/comments'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/ai', require('./routes/ai'));
+app.use('/api/payments', require('./routes/payments'));
 
 // Error handling middleware (phải đặt sau routes)
 app.use(notFound);

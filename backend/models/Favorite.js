@@ -65,6 +65,17 @@ class Favorite {
     );
     return result[0].count || 0;
   }
+
+  static async findUsersByComicId(comicId) {
+    const [users] = await db.promise.query(
+      `SELECT u.id, u.username, u.email, u.email_verified
+       FROM favorites f
+       JOIN users u ON f.user_id = u.id
+       WHERE f.comic_id = ? AND u.email_verified = TRUE`,
+      [comicId]
+    );
+    return users;
+  }
 }
 
 module.exports = Favorite;

@@ -154,6 +154,13 @@ const Header = () => {
 
           {isAuthenticated && user ? (
             <div className="user-menu">
+              {/* VIP/ADMIN Label */}
+              {user.role === 'vip' && (
+                <span className="role-badge role-badge-vip">VIP</span>
+              )}
+              {user.role === 'admin' && (
+                <span className="role-badge role-badge-admin">ADMIN</span>
+              )}
               <div className="notification-wrapper" ref={notificationRef}>
                 <button 
                   className="notification-btn" 
@@ -268,6 +275,18 @@ const Header = () => {
                           Quản lý tài khoản
                         </Link>
                       </>
+                    )}
+                    {user?.role === 'reader' && (
+                      <Link 
+                        to="/payment/upgrade" 
+                        className="dropdown-item dropdown-item-upgrade" 
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          setShowNotifications(false);
+                        }}
+                      >
+                        ⭐ Nâng cấp VIP
+                      </Link>
                     )}
                     <Link 
                       to="/profile" 

@@ -2,7 +2,9 @@ const Comic = require('../models/Comic');
 const Chapter = require('../models/Chapter');
 const Category = require('../models/Category');
 const Notification = require('../models/Notification');
+const Favorite = require('../models/Favorite');
 const User = require('../models/User');
+const emailService = require('../utils/emailService');
 const db = require('../config/database');
 const { successResponse, errorResponse } = require('../utils/response');
 const path = require('path');
@@ -243,6 +245,27 @@ class AdminController {
           chapterId,
           parseInt(chapter_number)
         );
+
+        // Gửi email thông báo cho các user đang theo dõi và đã xác nhận email
+        const followers = await Favorite.findUsersByComicId(comic_id);
+        
+        // Gửi email bất đồng bộ (không chờ kết quả)
+        followers.forEach(async (user) => {
+          try {
+            await emailService.sendNewChapterNotification(
+              user.email,
+              user.username,
+              comic.title,
+              chapter_number,
+              title || '',
+              comic.slug,
+              chapterId
+            );
+          } catch (error) {
+            console.error(`Error sending email to ${user.email}:`, error);
+            // Không throw error để không ảnh hưởng đến việc tạo chapter
+          }
+        });
       }
 
       return successResponse(res, { id: chapterId }, 'Tạo chương thành công', 201);

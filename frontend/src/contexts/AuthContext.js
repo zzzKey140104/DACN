@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { getProfile } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -31,11 +32,25 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user');
   };
 
+  const refreshUser = async () => {
+    try {
+      const response = await getProfile();
+      if (response.data.success) {
+        const userData = response.data.data;
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
+      }
+    } catch (error) {
+      console.error('Error refreshing user:', error);
+    }
+  };
+
   const value = {
     user,
     token,
     login,
     logout,
+    refreshUser,
     isAuthenticated: !!token
   };
 

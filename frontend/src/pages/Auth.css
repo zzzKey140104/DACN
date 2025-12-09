@@ -8,29 +8,49 @@
 
 .auth-container {
   background: white;
-  padding: 40px;
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  padding: 48px;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(44, 62, 107, 0.15);
   width: 100%;
   max-width: 450px;
-  transition: background-color 0.3s, box-shadow 0.3s;
+  transition: all 0.3s;
+  border: 2px solid rgba(107, 122, 159, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--gradient-primary);
 }
 
 .dark .auth-container {
-  background: #2a2a2a;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  background: linear-gradient(135deg, #2a2a2a 0%, #1e2a4a 100%);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  border-color: rgba(107, 122, 159, 0.3);
 }
 
 .auth-container h2 {
   text-align: center;
-  font-size: 28px;
-  font-weight: 700;
-  margin-bottom: 30px;
-  color: #2c3e50;
+  font-size: 32px;
+  font-weight: 800;
+  margin-bottom: 32px;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .dark .auth-container h2 {
-  color: #e0e0e0;
+  background: linear-gradient(135deg, var(--color-cream-light) 0%, var(--color-terracotta-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .auth-form {
@@ -46,77 +66,85 @@
 }
 
 .form-group label {
-  font-weight: 500;
-  color: #2c3e50;
+  font-weight: 600;
+  color: var(--color-deep-blue-dark);
   font-size: 14px;
 }
 
 .dark .form-group label {
-  color: #e0e0e0;
+  color: var(--color-cream-light);
 }
 
 .form-group input {
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
+  padding: 14px 18px;
+  border: 2px solid rgba(107, 122, 159, 0.2);
+  border-radius: 12px;
   font-size: 16px;
-  transition: border-color 0.3s, background-color 0.3s, color 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   background-color: white;
-  color: #333;
+  color: var(--color-deep-blue-dark);
 }
 
 .dark .form-group input {
-  background-color: #1a1a1a;
-  border-color: #444;
-  color: #e0e0e0;
+  background-color: rgba(30, 42, 74, 0.5);
+  border-color: rgba(107, 122, 159, 0.3);
+  color: var(--color-cream-light);
 }
 
 .form-group input:focus {
   outline: none;
-  border-color: #3498db;
+  border-color: var(--color-terracotta);
+  box-shadow: 0 0 0 4px rgba(217, 125, 84, 0.1);
+  transform: scale(1.02);
 }
 
 .dark .form-group input:focus {
-  border-color: #5dade2;
+  border-color: var(--color-terracotta-light);
+  box-shadow: 0 0 0 4px rgba(217, 125, 84, 0.2);
 }
 
 .auth-link {
   text-align: center;
-  margin-top: 20px;
-  color: #7f8c8d;
-}
-
-.dark .auth-link {
-  color: #b0b0b0;
-}
-
-.auth-link a {
-  color: #3498db;
+  margin-top: 24px;
+  color: var(--color-slate-blue);
   font-weight: 500;
 }
 
+.dark .auth-link {
+  color: var(--color-slate-blue-light);
+}
+
+.auth-link a {
+  color: var(--color-terracotta);
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
 .dark .auth-link a {
-  color: #5dade2;
+  color: var(--color-terracotta-light);
 }
 
 .auth-link a:hover {
+  color: var(--color-terracotta-dark);
   text-decoration: underline;
+  transform: translateX(2px);
 }
 
 .avatar-input {
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
+  padding: 12px;
+  border: 2px solid rgba(107, 122, 159, 0.2);
+  border-radius: 12px;
   font-size: 14px;
   width: 100%;
   cursor: pointer;
-  transition: border-color 0.3s, background-color 0.3s;
+  transition: all 0.3s;
+  background-color: white;
 }
 
 .dark .avatar-input {
-  background-color: #1a1a1a;
-  border-color: #444;
-  color: #e0e0e0;
+  background-color: rgba(30, 42, 74, 0.5);
+  border-color: rgba(107, 122, 159, 0.3);
+  color: var(--color-cream-light);
 }
 
 .avatar-preview {
@@ -130,10 +158,17 @@
   height: 100px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #ddd;
+  border: 3px solid var(--color-terracotta);
+  box-shadow: 0 4px 12px rgba(217, 125, 84, 0.3);
+  transition: all 0.3s;
+}
+
+.avatar-preview img:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(217, 125, 84, 0.4);
 }
 
 .dark .avatar-preview img {
-  border-color: #444;
+  border-color: var(--color-terracotta-light);
 }
 

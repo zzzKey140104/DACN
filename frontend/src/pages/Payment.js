@@ -1,0 +1,293 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { createPayment, checkPaymentStatus, simulatePaymentSuccess } from '../services/api';
+import Loading from '../components/common/Loading';
+import './Payment.css';
+
+const Payment = () => {
+  const navigate = useNavigate();
+  const { user, isAuthenticated, refreshUser } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [paymentData, setPaymentData] = useState(null);
+  const [error, setError] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(900); // 15 phút = 900 giây
+  const [paymentStatus, setPaymentStatus] = useState('pending');
+  const [isMock, setIsMock] = useState(false);
+  const [simulating, setSimulating] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
+    if (user && (user.role === 'vip' || user.role === 'admin')) {
+      navigate('/');
+      return;
+    }
+
+    // Tạo payment khi component mount
+    createPaymentRequest();
+  }, [isAuthenticated, user, navigate]);
+
+  useEffect(() => {
+    if (!paymentData || paymentStatus !== 'pending') return;
+
+    // Polling để kiểm tra trạng thái thanh toán mỗi 3 giây
+    const interval = setInterval(async () => {
+      try {
+        const response = await checkPaymentStatus(paymentData.order_id);
+        if (response.data.success) {
+          const status = response.data.data.status;
+          setPaymentStatus(status);
+
+          if (status === 'success') {
+            // Thanh toán thành công, refresh user và redirect
+            await refreshUser();
+            setTimeout(() => {
+              navigate('/?upgrade=success');
+            }, 2000);
+            clearInterval(interval);
+          } else if (status === 'failed' || status === 'expired') {
+            clearInterval(interval);
+          }
+        }
+      } catch (err) {
+        console.error('Error checking payment status:', err);
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [paymentData, paymentStatus, refreshUser, navigate]);
+
+  useEffect(() => {
+    if (!paymentData || timeLeft <= 0) return;
+
+    // Đếm ngược thời gian
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          setPaymentStatus('expired');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [paymentData, timeLeft]);
+
+  const createPaymentRequest = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await createPayment(50000); // 50,000 VNĐ
+
+      if (response.data.success) {
+        setPaymentData(response.data.data);
+        setIsMock(response.data.data.is_mock || false);
+        const expiresAt = new Date(response.data.data.expires_at);
+        const now = new Date();
+        const secondsLeft = Math.floor((expiresAt - now) / 1000);
+        setTimeLeft(Math.max(0, secondsLeft));
+        setPaymentStatus('pending');
+      } else {
+        setError(response.data.message || 'Lỗi tạo thanh toán');
+      }
+    } catch (err) {
+      console.error('Error creating payment:', err);
+      setError(err.response?.data?.message || 'Lỗi kết nối. Vui lòng thử lại sau.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleSimulatePayment = async () => {
+    if (!paymentData) return;
+    
+    try {
+      setSimulating(true);
+      const response = await simulatePaymentSuccess(paymentData.order_id);
+      if (response.data.success) {
+        // Refresh user và redirect
+        await refreshUser();
+        setTimeout(() => {
+          navigate('/?upgrade=success');
+        }, 1000);
+      } else {
+        setError(response.data.message || 'Lỗi simulate payment');
+      }
+    } catch (err) {
+      console.error('Error simulating payment:', err);
+      setError(err.response?.data?.message || 'Lỗi simulate payment');
+    } finally {
+      setSimulating(false);
+    }
+  };
+
+  if (loading) {
+    return <Loading />;
+  }
+
+  if (error && !paymentData) {
+    return (
+      <div className="payment-page">
+        <div className="container">
+          <div className="payment-error">
+            <h2>❌ Lỗi</h2>
+            <p>{error}</p>
+            <button onClick={createPaymentRequest} className="btn-retry">
+              Thử lại
+            </button>
+            <button onClick={() => navigate('/')} className="btn-back">
+              Về trang chủ
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="payment-page">
+      <div className="container">
+        <div className="payment-container">
+          <div className="payment-header">
+            <h1>⭐ Nâng cấp tài khoản VIP</h1>
+            <p className="payment-subtitle">
+              Thanh toán một lần để nâng cấp tài khoản lên VIP và đọc tất cả truyện VIP
+            </p>
+          </div>
+
+          <div className="payment-content">
+            {paymentStatus === 'pending' && timeLeft > 0 && (
+              <>
+                <div className="payment-info">
+                  <div className="info-item">
+                    <span className="info-label">Số tiền:</span>
+                    <span className="info-value">{paymentData?.amount?.toLocaleString('vi-VN')} VNĐ</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">Mã đơn hàng:</span>
+                    <span className="info-value">{paymentData?.order_id}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">Thời gian còn lại:</span>
+                    <span className={`info-value time-left ${timeLeft < 300 ? 'time-warning' : ''}`}>
+                      {formatTime(timeLeft)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="payment-action-section">
+                  <h3>Thanh toán nâng cấp VIP</h3>
+                  {isMock ? (
+                    <p className="payment-instruction">
+                      Mock Mode: Sử dụng nút bên dưới để simulate thanh toán
+                    </p>
+                  ) : (
+                    <p className="payment-instruction">
+                      Click vào nút bên dưới để thanh toán bằng MoMo
+                    </p>
+                  )}
+                  
+                  {paymentData?.pay_url && !isMock ? (
+                    <div className="pay-url-section">
+                      <a 
+                        href={paymentData.pay_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="btn-pay-url"
+                      >
+                        💳 Thanh toán bằng MoMo
+                      </a>
+                    </div>
+                  ) : (
+                    <div className="pay-url-section">
+                      <button 
+                        onClick={createPaymentRequest}
+                        className="btn-pay-url btn-pay-url-disabled"
+                        disabled
+                      >
+                        ⏳ Đang tạo link thanh toán...
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {isMock && (
+                  <div className="mock-payment-section">
+                    <button 
+                      onClick={handleSimulatePayment}
+                      disabled={simulating}
+                      className="btn-simulate"
+                    >
+                      {simulating ? 'Đang xử lý...' : '✅ Simulate Payment Success'}
+                    </button>
+                    <p className="mock-note">
+                      ⚠️ Mock Mode: Nút này chỉ dùng để test. Trong production sẽ không có nút này.
+                    </p>
+                  </div>
+                )}
+
+                <div className="payment-status">
+                  <div className="status-indicator status-pending">
+                    <span className="status-dot"></span>
+                    Đang chờ thanh toán...
+                  </div>
+                </div>
+              </>
+            )}
+
+            {paymentStatus === 'success' && (
+              <div className="payment-success">
+                <div className="success-icon">✅</div>
+                <h2>Thanh toán thành công!</h2>
+                <p>Tài khoản của bạn đã được nâng cấp lên VIP.</p>
+                <p>Đang chuyển hướng...</p>
+              </div>
+            )}
+
+            {(paymentStatus === 'expired' || timeLeft <= 0) && (
+              <div className="payment-expired">
+                <div className="expired-icon">⏰</div>
+                <h2>Mã QR đã hết hạn</h2>
+                <p>Mã QR thanh toán đã hết hạn. Vui lòng tạo mã mới.</p>
+                <button onClick={createPaymentRequest} className="btn-create-new">
+                  Tạo mã QR mới
+                </button>
+              </div>
+            )}
+
+            {paymentStatus === 'failed' && (
+              <div className="payment-failed">
+                <div className="failed-icon">❌</div>
+                <h2>Thanh toán thất bại</h2>
+                <p>Giao dịch thanh toán không thành công. Vui lòng thử lại.</p>
+                <button onClick={createPaymentRequest} className="btn-retry">
+                  Thử lại
+                </button>
+              </div>
+            )}
+
+            <div className="payment-actions">
+              <button onClick={() => navigate('/')} className="btn-cancel">
+                Hủy
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Payment;
+

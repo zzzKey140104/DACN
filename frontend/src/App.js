@@ -23,8 +23,15 @@ const AdminUsers = lazy(() => import('./pages/AdminUsers'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
+const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const SetupPassword = lazy(() => import('./pages/SetupPassword'));
+const GoogleRegistrationSuccess = lazy(() => import('./pages/GoogleRegistrationSuccess'));
+const GoogleAuthCallback = lazy(() => import('./pages/GoogleAuthCallback'));
 const Ranking = lazy(() => import('./pages/Ranking'));
 const AdvancedSearch = lazy(() => import('./pages/AdvancedSearch'));
+const Payment = lazy(() => import('./pages/Payment'));
 
 function AppContent() {
   const location = useLocation();
@@ -58,6 +65,13 @@ function AppContent() {
             <Route path="/admin/users" element={<AdminUsers />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/setup-password" element={<SetupPassword />} />
+            <Route path="/google-registration-success" element={<GoogleRegistrationSuccess />} />
+            <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />
+            <Route path="/payment/upgrade" element={<Payment />} />
           </Routes>
         </Suspense>
       </main>

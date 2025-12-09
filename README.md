@@ -110,12 +110,7 @@ FRONTEND_URL=http://localhost:3000
 **Lưu ý:** 
 - ⚠️ **JWT_SECRET là gì?** Đây là secret key dùng để mã hóa và xác thực JWT token khi user đăng nhập. Nó giống như "chìa khóa" để tạo và kiểm tra token.
 - ⚠️ **Tại sao cần thay đổi?** Giá trị mặc định `your_secret_key_here_change_in_production` là placeholder không an toàn. Bất kỳ ai biết giá trị này đều có thể tạo token giả mạo.
-- ⚠️ **Cách tạo JWT_SECRET mạnh:**
-  ```bash
-  cd backend
-  node generate-secret.js
-  ```
-  Sau đó copy giá trị được generate và thay thế trong file `.env`
+- ⚠️ **Cách tạo JWT_SECRET mạnh:** Bạn có thể tạo một chuỗi ngẫu nhiên mạnh bằng cách sử dụng online tool hoặc chạy lệnh: `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"` rồi copy giá trị và thay thế trong file `.env`
 - ⚠️ Không commit file `.env` lên git (đã được thêm vào `.gitignore`)
 
 ### Bước 4: Chạy ứng dụng
