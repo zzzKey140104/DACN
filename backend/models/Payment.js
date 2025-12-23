@@ -4,12 +4,24 @@ class Payment {
   static async create(data) {
     const { user_id, order_id, amount, payment_type, qr_code_url, qr_code_data, expires_at } = data;
     
-    const [result] = await db.promise.query(
-      `INSERT INTO payments (user_id, order_id, amount, payment_type, qr_code_url, qr_code_data, expires_at) 
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [user_id, order_id, amount, payment_type, qr_code_url, qr_code_data, expires_at]
-    );
-    return result.insertId;
+    try {
+      const [result] = await db.promise.query(
+        `INSERT INTO payments (user_id, order_id, amount, payment_type, qr_code_url, qr_code_data, expires_at) 
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [user_id, order_id, amount, payment_type, qr_code_url, qr_code_data, expires_at]
+      );
+      
+      if (result.insertId) {
+        console.log(`✅ Payment created in database: ID=${result.insertId}, order_id=${order_id}, user_id=${user_id}`);
+      } else {
+        console.error(`❌ Payment creation returned no insertId: order_id=${order_id}`);
+      }
+      
+      return result.insertId;
+    } catch (error) {
+      console.error(`❌ Error creating payment in database: order_id=${order_id}`, error);
+      throw error;
+    }
   }
 
   static async findByOrderId(order_id) {
@@ -78,14 +90,30 @@ class Payment {
       }
     });
 
-    if (fields.length === 0) return null;
+    if (fields.length === 0) {
+      console.warn(`⚠️ No fields to update for payment: ${order_id}`);
+      return null;
+    }
 
     values.push(order_id);
-    const [result] = await db.promise.query(
-      `UPDATE payments SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE order_id = ?`,
-      values
-    );
-    return result.affectedRows > 0;
+    try {
+      const [result] = await db.promise.query(
+        `UPDATE payments SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE order_id = ?`,
+        values
+      );
+      
+      const success = result.affectedRows > 0;
+      if (success) {
+        console.log(`✅ Payment updated in database: order_id=${order_id}, fields=${Object.keys(data).join(', ')}`);
+      } else {
+        console.warn(`⚠️ Payment update affected 0 rows: order_id=${order_id}`);
+      }
+      
+      return success;
+    } catch (error) {
+      console.error(`❌ Error updating payment in database: order_id=${order_id}`, error);
+      throw error;
+    }
   }
 
   static async findPendingExpired() {

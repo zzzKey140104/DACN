@@ -15,6 +15,9 @@ router.get('/:orderId', authenticateToken, paymentController.getPayment.bind(pay
 // Kiểm tra trạng thái thanh toán (yêu cầu authentication)
 router.get('/status/:orderId', authenticateToken, paymentController.checkPaymentStatus.bind(paymentController));
 
+// Nâng cấp thủ công nếu payment đã success nhưng user chưa được upgrade (yêu cầu authentication)
+router.post('/manual-upgrade/:orderId', authenticateToken, paymentController.manualUpgrade.bind(paymentController));
+
 // Lấy lịch sử thanh toán (yêu cầu authentication)
 router.get('/history/list', authenticateToken, paymentController.getPaymentHistory.bind(paymentController));
 

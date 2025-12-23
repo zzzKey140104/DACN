@@ -266,8 +266,14 @@ export const getPayment = (orderId) => {
   return api.get(`/payments/${orderId}`);
 };
 
-export const checkPaymentStatus = (orderId) => {
-  return api.get(`/payments/status/${orderId}`);
+export const checkPaymentStatus = (orderId, forceQuery = false) => {
+  return api.get(`/payments/status/${orderId}`, { 
+    params: { forceQuery: forceQuery ? 'true' : 'false' } 
+  });
+};
+
+export const manualUpgrade = (orderId) => {
+  return api.post(`/payments/manual-upgrade/${orderId}`);
 };
 
 export const getPaymentHistory = (params = {}) => {

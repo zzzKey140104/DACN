@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { createPayment, checkPaymentStatus, simulatePaymentSuccess } from '../services/api';
+import { createPayment, checkPaymentStatus, simulatePaymentSuccess, manualUpgrade } from '../services/api';
 import Loading from '../components/common/Loading';
 import './Payment.css';
 
@@ -15,6 +15,8 @@ const Payment = () => {
   const [paymentStatus, setPaymentStatus] = useState('pending');
   const [isMock, setIsMock] = useState(false);
   const [simulating, setSimulating] = useState(false);
+  const [paymentCreatedAt, setPaymentCreatedAt] = useState(null);
+  const [manualUpgrading, setManualUpgrading] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -34,21 +36,46 @@ const Payment = () => {
   useEffect(() => {
     if (!paymentData || paymentStatus !== 'pending') return;
 
+    let pollCount = 0;
     // Polling để kiểm tra trạng thái thanh toán mỗi 3 giây
     const interval = setInterval(async () => {
       try {
-        const response = await checkPaymentStatus(paymentData.order_id);
+        pollCount++;
+        // Sau 30 giây (10 lần polling), force query từ MoMo
+        const forceQuery = pollCount >= 10;
+        
+        const response = await checkPaymentStatus(paymentData.order_id, forceQuery);
         if (response.data.success) {
           const status = response.data.data.status;
           setPaymentStatus(status);
 
+          // Kiểm tra nếu payment success nhưng user chưa VIP
           if (status === 'success') {
-            // Thanh toán thành công, refresh user và redirect
-            await refreshUser();
-            setTimeout(() => {
-              navigate('/?upgrade=success');
-            }, 2000);
-            clearInterval(interval);
+            const userRole = response.data.data.user?.role;
+            if (userRole !== 'vip' && userRole !== 'admin') {
+              // Payment success nhưng user chưa được upgrade, thử manual upgrade
+              console.log('Payment success but user not VIP, attempting manual upgrade...');
+              try {
+                const upgradeResponse = await manualUpgrade(paymentData.order_id);
+                if (upgradeResponse.data.success) {
+                  await refreshUser();
+                  setTimeout(() => {
+                    navigate('/?upgrade=success');
+                  }, 2000);
+                  clearInterval(interval);
+                  return;
+                }
+              } catch (upgradeErr) {
+                console.error('Error in manual upgrade:', upgradeErr);
+              }
+            } else {
+              // Thanh toán thành công và user đã VIP, refresh user và redirect
+              await refreshUser();
+              setTimeout(() => {
+                navigate('/?upgrade=success');
+              }, 2000);
+              clearInterval(interval);
+            }
           } else if (status === 'failed' || status === 'expired') {
             clearInterval(interval);
           }
@@ -92,6 +119,7 @@ const Payment = () => {
         const secondsLeft = Math.floor((expiresAt - now) / 1000);
         setTimeLeft(Math.max(0, secondsLeft));
         setPaymentStatus('pending');
+        setPaymentCreatedAt(new Date());
       } else {
         setError(response.data.message || 'Lỗi tạo thanh toán');
       }
@@ -129,6 +157,59 @@ const Payment = () => {
       setError(err.response?.data?.message || 'Lỗi simulate payment');
     } finally {
       setSimulating(false);
+    }
+  };
+
+  const handleManualUpgrade = async () => {
+    if (!paymentData) return;
+    
+    try {
+      setManualUpgrading(true);
+      setError(null);
+      const response = await manualUpgrade(paymentData.order_id);
+      if (response.data.success) {
+        // Refresh user và redirect
+        await refreshUser();
+        setTimeout(() => {
+          navigate('/?upgrade=success');
+        }, 1000);
+      } else {
+        setError(response.data.message || 'Lỗi nâng cấp thủ công');
+      }
+    } catch (err) {
+      console.error('Error in manual upgrade:', err);
+      setError(err.response?.data?.message || 'Lỗi nâng cấp thủ công');
+    } finally {
+      setManualUpgrading(false);
+    }
+  };
+
+  const handleForceCheck = async () => {
+    if (!paymentData) return;
+    
+    try {
+      setError(null);
+      const response = await checkPaymentStatus(paymentData.order_id, true);
+      if (response.data.success) {
+        const status = response.data.data.status;
+        setPaymentStatus(status);
+        
+        if (status === 'success') {
+          const userRole = response.data.data.user?.role;
+          if (userRole !== 'vip' && userRole !== 'admin') {
+            // Thử manual upgrade
+            await handleManualUpgrade();
+          } else {
+            await refreshUser();
+            setTimeout(() => {
+              navigate('/?upgrade=success');
+            }, 2000);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error force checking payment:', err);
+      setError('Lỗi kiểm tra trạng thái thanh toán');
     }
   };
 
@@ -242,6 +323,19 @@ const Payment = () => {
                     <span className="status-dot"></span>
                     Đang chờ thanh toán...
                   </div>
+                  {paymentCreatedAt && Date.now() - paymentCreatedAt.getTime() > 30000 && (
+                    <div className="payment-help-section">
+                      <p className="help-text">
+                        ⚠️ Đã thanh toán nhưng chưa thấy cập nhật? 
+                      </p>
+                      <button 
+                        onClick={handleForceCheck}
+                        className="btn-force-check"
+                      >
+                        🔄 Kiểm tra lại từ MoMo
+                      </button>
+                    </div>
+                  )}
                 </div>
               </>
             )}
@@ -251,7 +345,23 @@ const Payment = () => {
                 <div className="success-icon">✅</div>
                 <h2>Thanh toán thành công!</h2>
                 <p>Tài khoản của bạn đã được nâng cấp lên VIP.</p>
-                <p>Đang chuyển hướng...</p>
+                {user && user.role !== 'vip' && user.role !== 'admin' && (
+                  <div className="manual-upgrade-section">
+                    <p className="warning-text">
+                      ⚠️ Thanh toán thành công nhưng tài khoản chưa được nâng cấp. Vui lòng click nút bên dưới.
+                    </p>
+                    <button 
+                      onClick={handleManualUpgrade}
+                      disabled={manualUpgrading}
+                      className="btn-manual-upgrade"
+                    >
+                      {manualUpgrading ? 'Đang xử lý...' : '🔧 Nâng cấp thủ công'}
+                    </button>
+                  </div>
+                )}
+                {user && (user.role === 'vip' || user.role === 'admin') && (
+                  <p>Đang chuyển hướng...</p>
+                )}
               </div>
             )}
 
